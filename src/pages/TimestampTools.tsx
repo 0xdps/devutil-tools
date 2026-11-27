@@ -1,192 +1,284 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import cronstrue from 'cronstrue'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
+import { CalendarClock, Clock, Pause, Play } from 'lucide-react'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { ToolPanel } from '@/components/tool/ToolPanel'
+import { CopyButton } from '@/components/tool/CopyButton'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toolsMetadata } from '@/config/seoConfig'
+import { formatAll, parseTimeInput, UNIT_LABELS, type EpochUnit } from '@/lib/timestamp'
+import { formatRelative } from '@/lib/jwt'
+import { CRON_FIELDS, nextRuns, parseCron } from '@/lib/cron'
 
-export default function TimestampTools() {
-  const meta = toolsMetadata.timestampTools
-  const [timestamp, setTimestamp] = useState(0) // Initialize with 0 to match server
-  const [cronExpression, setCronExpression] = useState('0 0 * * *')
-  const [cronDescription, setCronDescription] = useState('')
-  const [currentEpoch, setCurrentEpoch] = useState(Math.floor(Date.now() / 1000))
-  const [showLiveClock, setShowLiveClock] = useState(true)
+// ── Timestamp ───────────────────────────────────────────────────────
 
-  // Set current timestamp after hydration to avoid mismatch
+function NowStrip({ onUse }: { onUse: (seconds: string) => void }) {
+  const [now, setNow] = useState(() => Date.now())
+  const [paused, setPaused] = useState(false)
+
   useEffect(() => {
-    setTimestamp(Math.floor(Date.now() / 1000))
-  }, [])
+    if (paused) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [paused])
 
-  // Update live epoch time every second
-  useEffect(() => {
-    if (!showLiveClock) return
-
-    const interval = setInterval(() => {
-      setCurrentEpoch(Math.floor(Date.now() / 1000))
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [showLiveClock])
-
-  const convertToDate = () => {
-    const date = new Date(timestamp * 1000)
-    return date.toLocaleString()
-  }
-
-  const setNow = () => {
-    setTimestamp(Math.floor(Date.now() / 1000))
-    toast.success('Set to current time')
-  }
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      toast.success('Copied to clipboard')
-    } catch {
-      toast.error('Copy failed')
-    }
-  }
-
-  const formatLiveDate = (epoch: number): string => {
-    const date = new Date(epoch * 1000)
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZoneName: 'short'
-    })
-  }
-
-  const parseCron = () => {
-    try {
-      const description = cronstrue.toString(cronExpression)
-      setCronDescription(description)
-      toast.success('Cron parsed!')
-    } catch {
-      toast.error('Invalid cron expression')
-    }
-  }
-
+  const seconds = String(Math.floor(now / 1000))
   return (
-    <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Timestamp Tools</h1>
-      
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Unix Timestamp</h2>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showLiveClock}
-                onChange={(e) => setShowLiveClock(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
-              />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Show live clock</span>
-            </label>
-          </div>
-
-          {/* Live Clock Widget */}
-          {showLiveClock && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-lg border border-primary-200 dark:border-primary-800">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="text-xs text-primary-700 dark:text-primary-300 font-medium mb-1">
-                    Current Epoch Time (Live)
-                  </div>
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="text-2xl font-mono font-bold text-primary-900 dark:text-primary-100">
-                      {currentEpoch.toLocaleString()}
-                    </span>
-                    <span className="text-sm text-primary-600 dark:text-primary-400">
-                      {formatLiveDate(currentEpoch)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => copyToClipboard(currentEpoch.toString())}
-                    className="px-3 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                  >
-                    📋 Copy Epoch
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTimestamp(currentEpoch)
-                      toast.success('Timestamp set to current time')
-                    }}
-                    className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-primary-700 dark:text-primary-300 border border-primary-300 dark:border-primary-700 rounded-lg transition-colors"
-                  >
-                    Use This
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            ℹ️ Unix timestamp is the number of seconds since January 1, 1970 (UTC). Commonly used in databases and APIs.
-          </p>
-          <input
-            type="number"
-            value={timestamp}
-            onChange={(e) => setTimestamp(Number(e.target.value))}
-            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border rounded-lg mb-4"
-          />
-          <button onClick={setNow} className="px-4 py-2 bg-primary-600 text-white rounded-lg mb-4">
-            Set to Now
-          </button>
-          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded">
-            <strong>Human Readable:</strong> {convertToDate()}
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border">
-          <h2 className="text-xl font-semibold mb-4">Cron Expression Parser</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            ℹ️ Cron expressions schedule recurring tasks. Format: minute hour day month weekday. Example: "0 0 * * *" = daily at midnight
-          </p>
-          <input
-            type="text"
-            value={cronExpression}
-            onChange={(e) => setCronExpression(e.target.value)}
-            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border rounded-lg mb-4"
-            placeholder="0 0 * * *"
-          />
-          <button onClick={parseCron} className="px-4 py-2 bg-primary-600 text-white rounded-lg">
-            Parse Cron
-          </button>
-          {cronDescription && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded">
-              {cronDescription}
-            </div>
-          )}
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-700 dark:text-blue-300 font-semibold mb-2">Common Examples:</p>
-            <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
-              <li><code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">* * * * *</code> - Every minute</li>
-              <li><code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">0 * * * *</code> - Every hour</li>
-              <li><code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">0 0 * * *</code> - Daily at midnight</li>
-              <li><code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">0 0 * * 0</code> - Weekly on Sunday</li>
-              <li><code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">0 0 1 * *</code> - Monthly on 1st day</li>
-            </ul>
-          </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 shadow-xs">
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">Current Unix time</div>
+        <div className="font-mono text-2xl font-semibold tabular-nums tracking-tight" aria-live="off">
+          {seconds}
         </div>
       </div>
+      <div className="flex flex-wrap items-center gap-1">
+        <CopyButton value={seconds} label="Copy s" toolName="timestamp_tools" />
+        <CopyButton value={String(now)} label="Copy ms" toolName="timestamp_tools" />
+        <Button variant="ghost" size="xs" onClick={() => onUse(seconds)}>
+          Use
+        </Button>
+        <Button variant="ghost" size="icon-xs" onClick={() => setPaused(!paused)} aria-label={paused ? 'Resume clock' : 'Pause clock'}>
+          {paused ? <Play /> : <Pause />}
+        </Button>
+      </div>
     </div>
-    </>
+  )
+}
+
+function TimestampTab() {
+  const [input, setInput] = useState(() => String(Math.floor(Date.now() / 1000)))
+  const [unit, setUnit] = useState<EpochUnit | 'auto'>('auto')
+
+  const result = useMemo(() => {
+    if (!input.trim()) return {}
+    try {
+      return { parsed: parseTimeInput(input, unit) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [input, unit])
+
+  const { parsed, error } = result
+  const hint = parsed
+    ? parsed.source === 'date'
+      ? 'Read as a date string'
+      : `Read as ${UNIT_LABELS[parsed.source]}${unit === 'auto' ? ' (auto-detected)' : ''}`
+    : undefined
+
+  return (
+    <div className="space-y-4">
+      <NowStrip onUse={setInput} />
+
+      <div className="space-y-2">
+        <Label htmlFor="ts-input">Timestamp or date</Label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="ts-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="1700000000, 1700000000000 or 2024-03-15T10:30:00Z"
+            className="h-10 flex-1 font-mono text-base"
+            aria-invalid={!!error}
+            aria-describedby="ts-hint"
+            spellCheck={false}
+            autoFocus
+          />
+          <Select value={unit} onValueChange={(v) => setUnit(v as EpochUnit | 'auto')}>
+            <SelectTrigger className="h-10! w-full sm:w-44" aria-label="Epoch unit">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto-detect unit</SelectItem>
+              {(Object.keys(UNIT_LABELS) as EpochUnit[]).map((u) => (
+                <SelectItem key={u} value={u}>
+                  {UNIT_LABELS[u]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" className="h-10" onClick={() => setInput(String(Math.floor(Date.now() / 1000)))}>
+            <Clock /> Now
+          </Button>
+        </div>
+        <p id="ts-hint" className={error ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'} role={error ? 'alert' : undefined}>
+          {error ?? hint ?? 'Accepts seconds, milliseconds, microseconds, nanoseconds or a date string.'}
+        </p>
+      </div>
+
+      {parsed && (
+        <ToolPanel
+          title={
+            <span className="normal-case tracking-normal">
+              {formatRelative((parsed.date.getTime() - Date.now()) / 1000)}
+            </span>
+          }
+        >
+          {() => (
+            <dl className="divide-y">
+              {formatAll(parsed.date).map((f) => (
+                <div key={f.id} className="group flex items-center gap-3 px-3 py-2">
+                  <dt className="w-36 shrink-0 text-xs text-muted-foreground">{f.label}</dt>
+                  <dd className="min-w-0 flex-1 font-mono text-[13px] break-all">{f.value}</dd>
+                  <CopyButton value={f.value} label={`Copy ${f.label}`} iconOnly toolName="timestamp_tools" />
+                </div>
+              ))}
+            </dl>
+          )}
+        </ToolPanel>
+      )}
+    </div>
+  )
+}
+
+// ── Cron ────────────────────────────────────────────────────────────
+
+const PRESETS: { label: string; value: string }[] = [
+  { label: 'Every minute', value: '* * * * *' },
+  { label: 'Every 15 min', value: '*/15 * * * *' },
+  { label: 'Hourly', value: '0 * * * *' },
+  { label: 'Daily 9:00', value: '0 9 * * *' },
+  { label: 'Weekdays 9:00', value: '0 9 * * 1-5' },
+  { label: 'Weekly (Sun)', value: '0 0 * * 0' },
+  { label: 'Monthly (1st)', value: '0 0 1 * *' },
+]
+
+const runFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+function CronTab() {
+  const [expr, setExpr] = useState('0 9 * * 1-5')
+
+  const result = useMemo(() => {
+    try {
+      const cron = parseCron(expr)
+      let description = ''
+      try {
+        description = cronstrue.toString(cron.expression, { verbose: true })
+      } catch {
+        description = ''
+      }
+      return { cron, description, runs: nextRuns(cron, new Date(), 5) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [expr])
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="cron-input">Cron expression</Label>
+        <Input
+          id="cron-input"
+          value={expr}
+          onChange={(e) => setExpr(e.target.value)}
+          placeholder="*/5 * * * *"
+          className="h-10 font-mono text-base"
+          aria-invalid={!!result.error}
+          aria-describedby="cron-result"
+          spellCheck={false}
+        />
+        <div className="flex flex-wrap gap-1.5" aria-label="Presets">
+          {PRESETS.map((p) => (
+            <Button key={p.value} variant={expr === p.value ? 'secondary' : 'outline'} size="xs" onClick={() => setExpr(p.value)}>
+              {p.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div id="cron-result" aria-live="polite">
+        {result.error ? (
+          <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {result.error}
+          </p>
+        ) : (
+          result.cron && (
+            <div className="space-y-4">
+              <p className="rounded-xl border bg-card px-4 py-3 text-lg font-medium shadow-xs">
+                {result.description || result.cron.expression}
+              </p>
+
+              <ol className="grid grid-cols-5 gap-2" aria-label="Fields">
+                {result.cron.fields.map((token, i) => (
+                  <li key={i} className="rounded-lg border bg-card px-2 py-2 text-center shadow-xs">
+                    <div className="truncate font-mono text-sm font-semibold text-primary">{token}</div>
+                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{CRON_FIELDS[i].name}</div>
+                  </li>
+                ))}
+              </ol>
+
+              <ToolPanel title="Next runs (your time zone)">
+                {() =>
+                  result.runs.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-muted-foreground">This schedule never fires (e.g. February 30).</p>
+                  ) : (
+                    <ol className="divide-y">
+                      {result.runs.map((run) => (
+                        <li key={run.getTime()} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                          <span className="flex items-center gap-2 font-mono text-[13px]">
+                            <CalendarClock className="size-4 text-muted-foreground" />
+                            {runFmt.format(run)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{formatRelative((run.getTime() - Date.now()) / 1000)}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )
+                }
+              </ToolPanel>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Page ────────────────────────────────────────────────────────────
+
+export default function TimestampTools() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'cron' ? 'cron' : 'unix'
+
+  return (
+    <ToolPage
+      toolId="timestamp-tools"
+      meta={toolsMetadata.timestampTools}
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>A Unix timestamp counts seconds since 1970-01-01 00:00:00 UTC. JavaScript and many APIs use milliseconds.</li>
+          <li>
+            Cron fields are <code>minute hour day-of-month month day-of-week</code>. Use <code>*</code>, lists (<code>1,15</code>),
+            ranges (<code>1-5</code>), steps (<code>*/10</code>) and names (<code>MON</code>, <code>JAN</code>).
+          </li>
+          <li>When both day-of-month and day-of-week are set, the job runs on days matching either one (standard cron behavior).</li>
+        </ul>
+      }
+    >
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          const next = new URLSearchParams(searchParams)
+          if (v === 'cron') next.set('tab', 'cron')
+          else next.delete('tab')
+          setSearchParams(next, { replace: true })
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="unix">Unix timestamp</TabsTrigger>
+          <TabsTrigger value="cron">Cron expression</TabsTrigger>
+        </TabsList>
+        <TabsContent value="unix" className="mt-4">
+          <TimestampTab />
+        </TabsContent>
+        <TabsContent value="cron" className="mt-4">
+          <CronTab />
+        </TabsContent>
+      </Tabs>
+    </ToolPage>
   )
 }

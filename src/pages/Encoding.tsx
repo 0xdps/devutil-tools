@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ArrowLeftRight, CircleAlert, Eraser } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
@@ -24,8 +25,13 @@ const schemes: { value: EncodingScheme; label: string; hint: string }[] = [
 const byteLength = (s: string) => new TextEncoder().encode(s).length
 
 export default function Encoding() {
-  const [scheme, setScheme] = useState<EncodingScheme>('base64')
-  const [mode, setMode] = useState<Mode>('encode')
+  // ?scheme=url&mode=decode preselects (links from other tools).
+  const [searchParams] = useSearchParams()
+  const [scheme, setScheme] = useState<EncodingScheme>(() => {
+    const s = searchParams.get('scheme')
+    return schemes.some((x) => x.value === s) ? (s as EncodingScheme) : 'base64'
+  })
+  const [mode, setMode] = useState<Mode>(() => (searchParams.get('mode') === 'decode' ? 'decode' : 'encode'))
   const [input, setInput] = useState('')
   const deferredInput = useDeferredValue(input)
 

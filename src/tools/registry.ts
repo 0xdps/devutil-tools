@@ -180,11 +180,15 @@ export const tools: ToolDefinition[] = [
   {
     id: 'jwt-decoder',
     name: 'JWT Decoder',
-    description: 'Decode and inspect JSON Web Tokens',
+    description: 'Decode JSON Web Tokens and verify their signatures',
     path: '/jwt-decoder',
     category: 'security',
     icon: KeyRound,
-    keywords: ['jwt', 'token', 'json web token', 'decode', 'claims', 'bearer'],
+    keywords: ['jwt', 'token', 'json web token', 'decode', 'claims', 'bearer', 'verify', 'signature', 'hs256', 'rs256'],
+    features: [
+      { id: 'decode', name: 'Decode JWT claims' },
+      { id: 'verify', name: 'Verify JWT signature', keywords: ['hmac', 'rsa', 'ecdsa', 'public key', 'secret'] },
+    ],
     component: lazy(() => import('@/pages/JWTDecoder')),
   },
   {
@@ -268,7 +272,7 @@ export const tools: ToolDefinition[] = [
     keywords: ['unix', 'epoch', 'timestamp', 'date', 'cron', 'crontab'],
     features: [
       { id: 'unix', name: 'Unix timestamp converter', keywords: ['epoch'] },
-      { id: 'cron', name: 'Cron expression explainer' },
+      { id: 'cron', name: 'Cron expression explainer', keywords: ['crontab', 'schedule', 'next run'] },
     ],
     component: lazy(() => import('@/pages/TimestampTools')),
   },
