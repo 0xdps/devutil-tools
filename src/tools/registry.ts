@@ -235,21 +235,29 @@ export const tools: ToolDefinition[] = [
   {
     id: 'color-picker',
     name: 'Color Picker',
-    description: 'Pick colors and convert HEX, RGB and HSL',
+    description: 'Convert colors, check WCAG contrast, generate shades',
     path: '/color-picker',
     category: 'web',
     icon: Palette,
-    keywords: ['color', 'colour', 'hex', 'rgb', 'hsl', 'picker'],
+    keywords: ['color', 'colour', 'hex', 'rgb', 'hsl', 'oklch', 'cmyk', 'picker', 'contrast', 'wcag', 'palette', 'shades'],
+    features: [
+      { id: 'contrast', name: 'Color contrast checker (WCAG)', keywords: ['accessibility', 'a11y', 'aa', 'aaa'] },
+      { id: 'palette', name: 'Tints & shades palette', keywords: ['scale', 'tailwind'] },
+    ],
     component: lazy(() => import('@/pages/ColorPicker')),
   },
   {
     id: 'qr-code',
     name: 'QR Code',
-    description: 'Generate and download QR codes',
+    description: 'QR codes for links, Wi-Fi, email, phone and contacts',
     path: '/qr-code',
     category: 'web',
     icon: QrCode,
-    keywords: ['qr', 'qrcode', 'barcode'],
+    keywords: ['qr', 'qrcode', 'barcode', 'wifi qr', 'vcard'],
+    features: [
+      { id: 'wifi', name: 'Wi-Fi QR code', keywords: ['wireless', 'password', 'guest network'] },
+      { id: 'contact', name: 'Contact card QR (vCard)', keywords: ['business card'] },
+    ],
     component: lazy(() => import('@/pages/QRCodeGenerator')),
   },
   {
