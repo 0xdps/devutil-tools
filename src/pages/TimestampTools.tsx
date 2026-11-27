@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import cronstrue from 'cronstrue'
 import { CalendarClock, Clock, Pause, Play } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
@@ -14,6 +13,9 @@ import { toolsMetadata } from '@/config/seoConfig'
 import { formatAll, parseTimeInput, UNIT_LABELS, type EpochUnit } from '@/lib/timestamp'
 import { formatRelative } from '@/lib/jwt'
 import { CRON_FIELDS, nextRuns, parseCron } from '@/lib/cron'
+import { useTabParam } from '@/hooks/use-tab-param'
+
+const TABS = ['unix', 'cron'] as const
 
 // ── Timestamp ───────────────────────────────────────────────────────
 
@@ -241,8 +243,7 @@ function CronTab() {
 // ── Page ────────────────────────────────────────────────────────────
 
 export default function TimestampTools() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const tab = searchParams.get('tab') === 'cron' ? 'cron' : 'unix'
+  const [tab, setTab] = useTabParam(TABS)
 
   return (
     <ToolPage
@@ -259,15 +260,7 @@ export default function TimestampTools() {
         </ul>
       }
     >
-      <Tabs
-        value={tab}
-        onValueChange={(v) => {
-          const next = new URLSearchParams(searchParams)
-          if (v === 'cron') next.set('tab', 'cron')
-          else next.delete('tab')
-          setSearchParams(next, { replace: true })
-        }}
-      >
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="unix">Unix timestamp</TabsTrigger>
           <TabsTrigger value="cron">Cron expression</TabsTrigger>
