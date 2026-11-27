@@ -14,7 +14,6 @@ import {
   CodeXml,
   Dices,
   FileText,
-  FlaskConical,
   GitCompareArrows,
   Globe,
   Hash,
@@ -169,11 +168,17 @@ export const tools: ToolDefinition[] = [
   {
     id: 'regex-tester',
     name: 'Regex Tester',
-    description: 'Test regular expressions against sample text',
+    description: 'Test, explain and replace with regular expressions',
     path: '/regex-tester',
+    aliases: ['/regex-playground'],
     category: 'code',
     icon: Regex,
-    keywords: ['regex', 'regexp', 'regular expression', 'pattern', 'match'],
+    keywords: ['regex', 'regexp', 'regular expression', 'pattern', 'match', 'replace', 'playground'],
+    features: [
+      { id: 'replace', name: 'Regex find & replace', keywords: ['substitute', '$1'] },
+      { id: 'explain', name: 'Regex explainer', keywords: ['what does this regex mean'] },
+      { id: 'library', name: 'Common regex patterns', keywords: ['email regex', 'url regex', 'ip regex'] },
+    ],
     component: lazy(() => import('@/pages/RegexTester')),
   },
 
@@ -327,18 +332,6 @@ export const tools: ToolDefinition[] = [
     status: 'beta',
     hidden: true,
     component: lazy(() => import('@/pages/JavaScriptRunner')),
-  },
-  {
-    id: 'regex-playground',
-    name: 'Regex Playground',
-    description: 'Explore regex with a pattern library and explanations',
-    path: '/regex-playground',
-    category: 'playground',
-    icon: FlaskConical,
-    keywords: ['regex', 'playground', 'patterns', 'library'],
-    status: 'beta',
-    hidden: true,
-    component: lazy(() => import('@/pages/RegexPlayground')),
   },
 ]
 

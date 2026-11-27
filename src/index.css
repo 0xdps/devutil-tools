@@ -213,3 +213,17 @@
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
 }
+
+/* Regex match highlighting inside CodeMirror (alternating so adjacent matches stay distinct) */
+.re-match {
+  background: color-mix(in oklch, var(--primary) 22%, transparent);
+  border-radius: 2px;
+}
+.re-match-alt {
+  background: color-mix(in oklch, var(--chart-2) 26%, transparent);
+  border-radius: 2px;
+}
+.re-group {
+  text-decoration: underline 2px color-mix(in oklch, var(--warning) 85%, transparent);
+  text-underline-offset: 3px;
+}

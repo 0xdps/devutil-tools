@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Compartment, EditorState } from '@codemirror/state'
 import {
+  Decoration,
   EditorView,
   drawSelection,
   highlightActiveLine,
@@ -15,6 +16,13 @@ import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/sea
 import { cn } from '@/lib/utils'
 import { loadLanguage, tokenTheme, type EditorLanguage } from './code-editor-setup'
 
+/** A highlighted range (UTF-16 offsets, same as JS string indices). */
+export interface EditorMark {
+  from: number
+  to: number
+  className: string
+}
+
 export interface CodeEditorProps {
   value: string
   onChange?: (value: string) => void
@@ -27,6 +35,8 @@ export interface CodeEditorProps {
   lineWrapping?: boolean
   className?: string
   autoFocus?: boolean
+  /** Ranges to highlight, e.g. regex matches. */
+  marks?: EditorMark[]
 }
 
 /**
@@ -45,11 +55,13 @@ export function CodeEditor({
   lineWrapping = true,
   className,
   autoFocus = false,
+  marks,
 }: CodeEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   const languageCompartment = useRef(new Compartment())
+  const marksCompartment = useRef(new Compartment())
   onChangeRef.current = onChange
 
   // Create once.
@@ -72,6 +84,7 @@ export function CodeEditor({
           keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
           tokenTheme,
           languageCompartment.current.of([]),
+          marksCompartment.current.of([]),
           lineWrapping ? EditorView.lineWrapping : [],
           EditorState.readOnly.of(readOnly),
           EditorView.editable.of(!readOnly),
@@ -104,6 +117,17 @@ export function CodeEditor({
     const current = view.state.doc.toString()
     if (current !== value) view.dispatch({ changes: { from: 0, to: current.length, insert: value } })
   }, [value])
+
+  // Highlight marks (skip empty and out-of-range ranges; CM requires sorted input).
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    const length = view.state.doc.length
+    const ranges = (marks ?? [])
+      .filter((m) => m.to > m.from && m.to <= length)
+      .map((m) => Decoration.mark({ class: m.className }).range(m.from, m.to))
+    view.dispatch({ effects: marksCompartment.current.reconfigure(EditorView.decorations.of(Decoration.set(ranges, true))) })
+  }, [marks])
 
   // Language: load the grammar on demand, then swap it in.
   useEffect(() => {
