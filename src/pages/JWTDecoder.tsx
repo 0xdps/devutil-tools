@@ -86,7 +86,9 @@ function VerifySignature({ jwt, initialKey }: { jwt: DecodedJwt; initialKey: str
   const [result, setResult] = useState<VerifyState>({ status: 'idle' })
   const deferredKey = useDeferredValue(key)
 
-  useEffect(() => setKey(initialKey), [initialKey])
+  useEffect(() => {
+    setKey(initialKey)
+  }, [initialKey])
 
   useEffect(() => {
     if (!deferredKey.trim() || keyKind === 'unsupported') {
