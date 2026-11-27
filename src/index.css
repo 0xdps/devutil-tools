@@ -6,10 +6,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Legacy palette (primary-50..900, dark-*, accent-500…) used by pages that
-   have not been migrated to the design tokens yet. Remove once migration ends. */
-@config "../tailwind.config.js";
-
 /* ───────────────────────── Design tokens ─────────────────────────
    Cool neutral surfaces + the DevUtil sky-blue brand.
    Light is the default; .dark overrides. next-themes sets the class. */
