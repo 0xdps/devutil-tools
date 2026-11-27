@@ -2,6 +2,13 @@
 
 This document describes how to extract reusable tool logic into an **npm package** consumed by the **Developer Utilities Tool** web app and, later, a **command-line interface**—without duplicating behavior or drifting implementations.
 
+> **Status (Nov 2026):** the extraction itself is done *inside the app*. Waves A–C below are complete: all tool logic now lives in `src/lib/` as pure functions with unit tests (`encoding`, `jwt`, `hash`, `password`, `random`, `timestamp`, `cron`, `url`, `transform`, `code-format`, `text`, `color`, `qr-payload`, `seo`, `regex`, `timezone`, …), and the pages only render results. What remains is the packaging step: move `src/lib/` into `packages/core`, then add `packages/cli`.
+>
+> Before packaging, note which modules are portable and which are browser-specific:
+> - **Portable (Node 20+ and browsers):** everything above. They use `globalThis.crypto`, `TextEncoder` and `Intl` only; `code-format` loads Prettier and Terser lazily; `share` needs `CompressionStream` (Node 18+).
+> - **Browser-only (keep in the app):** `regex.worker.ts`, `js-sandbox.ts`, `html-sandbox.ts`, `markdown-doc.ts` (they build sandbox sources) and `detect.ts` (UI smart-paste heuristics; could be reused by a CLI for `devutil detect`).
+> - The tool catalog in `src/tools/catalog.ts` is React-free and could also drive CLI command names and `--help` text.
+
 ## Goals
 
 - **Single source of truth** for encode/hash/JWT/format conversion and similar logic.

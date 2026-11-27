@@ -9,7 +9,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { CASE_STYLES, processLines, textStats, type LineOptions, type SortMode } from '@/lib/text'
 
@@ -148,7 +147,6 @@ export default function TextUtilities() {
   return (
     <ToolPage
       toolId="text-utilities"
-      meta={toolsMetadata.textUtilities}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Case conversion understands identifiers: “HTTPServerError” becomes http_server_error, not h_t_t_p_server_error.</li>

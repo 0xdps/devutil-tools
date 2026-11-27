@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, ShieldAlert, Sparkles } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -13,7 +14,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { base64ToBytes } from '@/lib/encoding'
 import {
@@ -162,16 +162,16 @@ function HashTab() {
       <ToolPanel
         title="Input"
         actions={
-          <Tabs value={source} onValueChange={(v) => setSource(v as 'text' | 'file')}>
-            <TabsList className="h-7" aria-label="Input source">
-              <TabsTrigger value="text" className="px-2 text-xs">
-                Text
-              </TabsTrigger>
-              <TabsTrigger value="file" className="px-2 text-xs">
-                File
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <SegmentedControl
+            label="Input source"
+            size="sm"
+            value={source}
+            onValueChange={setSource}
+            options={[
+              { value: 'text', label: 'Text' },
+              { value: 'file', label: 'File' },
+            ]}
+          />
         }
         footer={source === 'text' ? `${utf8(text).length.toLocaleString()} bytes (UTF-8)` : undefined}
       >
@@ -408,7 +408,6 @@ export default function HashVerify() {
   return (
     <ToolPage
       toolId="hash-verify"
-      meta={toolsMetadata.hashVerify}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>MD5 and SHA-1 are broken for security (collisions are practical). Use them only to match legacy checksums.</li>

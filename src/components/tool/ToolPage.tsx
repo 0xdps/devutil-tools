@@ -4,7 +4,8 @@ import SEO from '@/components/SEO'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { ToolMeta } from '@/config/seoConfig'
+import { useLocation } from 'react-router-dom'
+import { toolMeta } from '@/tools/catalog'
 import { useFavorites } from '@/hooks/use-tool-prefs'
 import { getToolById } from '@/tools/registry'
 import { cn } from '@/lib/utils'
@@ -13,7 +14,6 @@ import { useToolActions } from './tool-actions'
 interface ToolPageProps {
   /** Registry id; supplies the name, icon and description. */
   toolId: string
-  meta: ToolMeta
   /** Extra header actions, shown left of Share and the favorite star. */
   actions?: ReactNode
   /** Reference/help content rendered below the tool. */
@@ -23,8 +23,9 @@ interface ToolPageProps {
 }
 
 /** Standard frame for every tool: SEO, header (share, favorite), shared-link notice, body, reference. */
-export function ToolPage({ toolId, meta, actions, reference, children, className }: ToolPageProps) {
+export function ToolPage({ toolId, actions, reference, children, className }: ToolPageProps) {
   const tool = getToolById(toolId)
+  const { pathname } = useLocation()
   const { isFavorite, toggleFavorite } = useFavorites()
   const toolActions = useToolActions()
   if (!tool) throw new Error(`Unknown tool id "${toolId}"`)
@@ -33,15 +34,7 @@ export function ToolPage({ toolId, meta, actions, reference, children, className
 
   return (
     <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
+      <SEO meta={toolMeta(tool, pathname.slice(tool.path.length + 1).replace(/\/+$/, '') || undefined)} />
       <div className={cn('mx-auto w-full max-w-6xl space-y-6', className)}>
         <header className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">

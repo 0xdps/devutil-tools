@@ -7,7 +7,6 @@ import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { toolsMetadata } from '@/config/seoConfig'
 import { parseUrl, urlParts, withParams, type ParsedUrl, type QueryParam } from '@/lib/url'
 
 const EXAMPLE = 'https://api.example.com:8080/v1/search?q=caf%C3%A9%20menu&tag=coffee&tag=paris&page=2#results'
@@ -44,7 +43,6 @@ export default function URLTools() {
   return (
     <ToolPage
       toolId="url-tools"
-      meta={toolsMetadata.urlTools}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -54,7 +52,7 @@ export default function URLTools() {
           <li>Repeated keys (<code>?tag=a&amp;tag=b</code>) are kept in order, as servers receive them.</li>
           <li>
             Need to percent-encode a single value?{' '}
-            <Link to="/encoding?scheme=url" className="text-primary underline-offset-4 hover:underline">
+            <Link to="/encoding?scheme=url" className="text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
               Use Encode / Decode
             </Link>
             .
@@ -110,10 +108,12 @@ export default function URLTools() {
                 {parts.map((part) => (
                   <div key={part.id} className="group flex items-start gap-3 px-3 py-2">
                     <dt className="w-20 shrink-0 pt-0.5 text-xs text-muted-foreground">{part.label}</dt>
-                    <dd className="min-w-0 flex-1 font-mono text-[13px] break-all">{part.value}</dd>
-                    <div className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      <CopyButton value={part.value} label={`Copy ${part.label.toLowerCase()}`} iconOnly />
-                    </div>
+                    <dd className="flex min-w-0 flex-1 items-start gap-2">
+                      <span className="min-w-0 flex-1 font-mono text-[13px] break-all">{part.value}</span>
+                      <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <CopyButton value={part.value} label={`Copy ${part.label.toLowerCase()}`} iconOnly />
+                      </span>
+                    </dd>
                   </div>
                 ))}
               </dl>

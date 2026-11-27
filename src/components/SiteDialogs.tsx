@@ -24,7 +24,7 @@ function Section({ icon: Icon, title, children }: { icon: typeof Lock; title: st
       </div>
       <div className="space-y-1 text-sm">
         <h3 className="font-medium text-foreground">{title}</h3>
-        <div className="text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 hover:[&_a]:underline">
+        <div className="text-muted-foreground [&_a]:text-primary [&_a]:underline [&_a]:decoration-primary/40 [&_a]:underline-offset-4 hover:[&_a]:decoration-primary">
           {children}
         </div>
       </div>

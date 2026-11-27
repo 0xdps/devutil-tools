@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import {
   AI_CRAWLERS,
@@ -425,7 +424,6 @@ export default function SEOGenerator() {
   return (
     <ToolPage
       toolId="seo-generator"
-      meta={toolsMetadata.seoGenerator}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>All values are HTML/XML-escaped, so quotes and ampersands can’t break your markup.</li>

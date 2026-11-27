@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Lock, Search, Star, WifiOff, Zap } from 'lucide-react'
 import SEO from '@/components/SEO'
+import { pageMeta } from '@/tools/catalog'
 import { Kbd } from '@/components/ui/kbd'
-import { toolsMetadata } from '@/config/seoConfig'
 import { getToolById, toolsByCategory, type ToolDefinition } from '@/tools/registry'
 import { useFavorites, useRecents } from '@/hooks/use-tool-prefs'
 import { useCommandPalette } from '@/components/layout/command-palette-context'
@@ -49,7 +49,6 @@ const promises = [
 ]
 
 export default function Home() {
-  const meta = toolsMetadata.home
   const { favorites } = useFavorites()
   const recents = useRecents()
   const { setOpen } = useCommandPalette()
@@ -61,15 +60,7 @@ export default function Home() {
 
   return (
     <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        type="website"
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-      />
+      <SEO meta={pageMeta('home', '/')} />
       <div className="mx-auto max-w-6xl space-y-10">
         <section className="space-y-5 pt-2 sm:pt-6">
           <div className="space-y-2">
@@ -149,7 +140,7 @@ export default function Home() {
           </div>
           <Link
             to="/contribute"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
           >
             How to contribute <ArrowUpRight className="size-4" />
           </Link>

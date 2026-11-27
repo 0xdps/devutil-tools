@@ -19,7 +19,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { useRegexWorker } from '@/hooks/use-regex-worker'
 import { REGEX_FLAGS, explainRegex, type RegexMatch } from '@/lib/regex'
@@ -42,7 +41,7 @@ const LIBRARY: { name: string; pattern: string; flags: string; sample: string }[
 function MatchList({ matches }: { matches: RegexMatch[] }) {
   if (!matches.length) return <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matches.</p>
   return (
-    <ol className="max-h-[28rem] divide-y overflow-auto">
+    <ol tabIndex={0} aria-label="Matches" className="max-h-[28rem] divide-y overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">
       {matches.map((m, i) => (
         <li key={`${m.index}-${i}`} className="space-y-1 px-3 py-2">
           <div className="flex items-baseline justify-between gap-2">
@@ -125,7 +124,6 @@ export default function RegexTester() {
   return (
     <ToolPage
       toolId="regex-tester"
-      meta={toolsMetadata.regexTester}
       reference={
         <div className="grid gap-x-8 gap-y-1 font-mono text-xs sm:grid-cols-2 lg:grid-cols-3">
           {[
@@ -211,7 +209,6 @@ export default function RegexTester() {
                     pressed={flags.includes(flag)}
                     onPressedChange={(on) => toggleFlag(flag, on)}
                     className="h-7 px-2 font-mono text-xs data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
-                    aria-label={`${name} (${flag})`}
                   >
                     {flag} <span className="font-sans text-muted-foreground">{name}</span>
                   </Toggle>

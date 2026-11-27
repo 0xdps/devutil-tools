@@ -1,636 +1,130 @@
-# Developer Utilities Tool
+# DevUtil: Developer Utilities Tool
 
-> A comprehensive, privacy-first collection of developer utilities for everyday tasks—all running locally in your browser.
+> Free developer tools that run in your browser. Encode, convert, format, hash, decode and test without uploading anything.
 
-## 🚀 Overview
+**Live site:** [devutil.codes](https://devutil.codes) · **Repository:** [0xdps/devutil-tools](https://github.com/0xdps/devutil-tools)
 
-**Developer Utilities Tool** is a modern, open-source web application that provides developers with a powerful suite of productivity tools. **All tool work runs in your browser**: your inputs and outputs are not sent to our servers for processing. We do collect **anonymous, aggregate usage statistics** (for example which pages and tools are opened) so we can see what is useful and prioritize improvements—we are **not** trying to identify who you are, and there are no accounts or sign-ins. It's perfect for quick conversions, encoding/decoding, code formatting, testing, and more.
+## Why
 
-**Live Site**: [devutil.codes](https://devutil.codes) | **Repository**: [0xdps/devutil-tools](https://github.com/0xdps/devutil-tools)
+- **Private.** Every tool runs locally. What you paste is never sent to a server. See [Privacy](#privacy).
+- **Fast.** One small shell; each tool (and heavy dependencies like the code editor, Prettier and Terser) loads only when you open it.
+- **Works offline.** Installable as a PWA; cached tools keep working without a connection.
+- **Keyboard-first.** `⌘K` searches every tool and every feature inside a tool. Paste a JWT, JSON, timestamp or hash into the search box (or the home page) and DevUtil opens the right tool with your content filled in.
+- **Open source** (MIT), with light, dark and system themes.
 
-## ✨ Key Features
+## Tools
 
-### 🔒 Privacy First
+| Category | Tool | What it does |
+| --- | --- | --- |
+| Convert & encode | **Data Transform** | JSON ⇄ YAML ⇄ CSV ⇄ XML ⇄ TOML, with warnings for lossy conversions |
+| | **Encode / Decode** | Base64, Base64URL, URL, HTML entities, Base32, Base58, data URIs |
+| | **URL Tools** | Parse URLs, edit query parameters in a table |
+| Text & code | **Code & JSON** | Prettier formatting for 10 languages, JS/CSS/JSON minify, JSONPath |
+| | **Text Utilities** | 12 case styles (understands acronyms), statistics, sort/dedupe lines |
+| | **Text Diff** | Live side-by-side or unified diff; export a `.diff` patch |
+| | **Regex Tester** | Highlighting, groups, replace, plain-English explainer; runs in a worker |
+| Security | **JWT Decoder** | Decode claims and verify HS/RS/PS/ES signatures locally |
+| | **Hash & Verify** | MD5 and SHA digests of text or files, checksum verify, HMAC, password strength |
+| | **Generators** | UUID v1/v4/v5/v7 + inspector, passwords, random numbers, Lorem Ipsum |
+| Web & design | **Color Picker** | HEX/RGB/HSL/OKLCH/HSV/CMYK, WCAG contrast, tint/shade scale |
+| | **QR Code** | Links, Wi-Fi, email, phone/SMS and vCard; PNG and SVG |
+| | **SEO Generator** | Meta/social tags with previews, robots.txt, sitemap.xml, JSON-LD |
+| Date & time | **Timestamp & Cron** | Epoch ⇄ date in any unit; cron explainer with next runs |
+| | **Timezone Compare** | World clock and meeting planner (DST-aware) |
+| Playgrounds | **Markdown Preview** | GitHub-flavored Markdown with a script-blocking preview |
+| | **HTML Playground** | HTML/CSS/JS with a sandboxed live preview and console |
+| | **JavaScript Runner** | Runs code in an isolated worker with top-level await |
 
-- **100% Client-Side Tool Processing**: Encoding, conversion, hashing, and other tool logic run entirely in your browser; we do not upload your pasted text or files to process them
-- **No Profiling**: No accounts, no “log in to use tools,” and usage stats are for **aggregate** insight (what gets used), not for selling data or ad targeting
-- **Anonymous Usage Metrics**: Page views and optional tool events help us understand which utilities matter; see [Analytics setup](docs/ANALYTICS_SETUP.md) for what the app can record
-- **Open Source**: Full transparency—inspect the code yourself
-- **Offline Capable**: After the app is cached (PWA), many tools keep working without a connection; first load and analytics still use the network when available
+Sharing: tools that take text input have a **Share** button (`⌥⇧S`). The input is compressed into the URL fragment (`#s=…`), which browsers never send to a server. Shared code never runs until the recipient presses Run. Tools whose input is usually a secret (JWT, hashes, QR, generators) deliberately have no share link.
 
-### 🎯 16+ Implemented Tools
+Press `?` in the app for all keyboard shortcuts.
 
-#### 🔄 Data & Conversion Tools
+## Getting started
 
-- **Data Transform** - Convert between JSON, CSV, YAML, TOML, and XML with syntax highlighting
-- **Encoding/Decoding** - Base64, Base32, Base58, URL encoding, HTML entities, and Data URIs
-- **Text Utilities** - Case converter, character/word counter, text cleaner, line sorter, text reverser
-
-#### 🔐 Security & Cryptography
-
-- **Generator Toolkit** - UUID (v1/v4/v5), secure random strings/numbers, Lorem Ipsum text
-- **Hash & Verify** - MD5, SHA-1, SHA-256, SHA-512 hashes, HMAC signatures, password strength analyzer
-- **JWT Decoder** - Decode and inspect JWT tokens with human-readable timestamps
-
-#### 💻 Code & Development
-
-- **Code Formatter** - Beautify/minify JSON, HTML, CSS, JavaScript
-- **Regex Tester** - Test regular expressions with pattern matching and global/case-insensitive/multiline flags
-- **Code Diff** - Side-by-side code comparison (scaffolded, coming soon)
-
-#### 🎨 Web & Design
-
-- **Color Picker** - Convert between HEX, RGB, HSL formats with visual picker
-- **URL Tools** - Parse URLs, encode/decode components, query string analyzer
-- **QR Code Generator** - Generate and download QR codes from text or URLs
-
-#### ⚙️ Utilities & Tools
-
-- **Timestamp Tools** - Convert Unix timestamps to dates, parse Cron expressions
-- **SEO Generator** - Generate meta tags, Open Graph cards, Twitter Cards (scaffolded, coming soon)
-
-#### 🎮 Developer Playgrounds
-
-- **Markdown Previewer** - Live markdown editor with side-by-side preview
-- **HTML Playground** - Interactive HTML + CSS + JS editor with live preview
-- **JavaScript Runner** - Execute JavaScript code with console output capture
-
-### 🚧 Planned Features
-
-- **JSON Tools** - JSON Diff, JSONPath evaluator, Schema validator
-- **Regex Playground** - Interactive regex testing with pattern library
-- **API Tester** - REST/GraphQL request builder
-- Favorites/bookmarks for frequently used tools
-- Keyboard shortcuts for power users
-- Tool usage history (local storage)
-- Progressive Web App (PWA) support
-- Shareable links with encoded data
-
-## 🛠️ Tech Stack
-
-### Core Technologies
-
-- **React 19** - UI framework
-- **TypeScript 5.9** - Type-safe development
-- **Vite 8** - Build tool with HMR
-- **Tailwind CSS 4** - Utility-first styling with CSS-variable design tokens (light, dark, system)
-- **shadcn/ui + Radix** - Accessible UI components, owned in `src/components/ui`
-- **React Router 7** - Client-side routing, generated from the tool registry (`src/tools/registry.ts`)
-
-### Key Libraries
-
-| Library              | Purpose                          |
-| -------------------- | -------------------------------- |
-| `react-helmet-async` | SEO meta tags per route          |
-| `crypto-js`          | Cryptographic functions          |
-| `uuid`               | UUID generation                  |
-| `marked`             | Markdown parsing and rendering   |
-| `highlight.js`       | Code syntax highlighting         |
-| `papaparse`          | CSV parsing and generation       |
-| `js-yaml`            | YAML parsing                     |
-| `fast-xml-parser`    | XML parsing                      |
-| `qrcode`             | QR code generation               |
-| `cronstrue`          | Cron expression parsing          |
-| `fuse.js`            | Fuzzy search for tool navigation |
-| `diff`               | Text/code comparison             |
-| `sonner`             | Toast notifications              |
-| `cmdk`               | ⌘K command palette               |
-| `lucide-react`       | Icons                            |
-
-## 📦 Project Structure
-
-```
-devutil-tools/
-├── public/                   # Static assets & SEO files
-│   ├── robots.txt            # Search engine crawler rules
-│   ├── sitemap.xml           # Site structure for SEO
-│   └── CNAME                 # Custom domain config
-│
-├── src/
-│   ├── components/           # Reusable UI components
-│   │   ├── Header.tsx        # Top navigation with theme toggle
-│   │   ├── Sidebar.tsx       # Side navigation with fuzzy search
-│   │   ├── Footer.tsx        # Footer component
-│   │   ├── Layout.tsx        # Main layout wrapper
-│   │   ├── Modal.tsx         # Modal component
-│   │   ├── CustomSelect.tsx  # Custom select dropdown
-│   │   ├── Logo.tsx          # Logo component
-│   │   └── SEO.tsx           # SEO meta tags component
-│   │
-│   ├── config/               # Configuration files
-│   │   └── seoConfig.ts      # SEO metadata for all pages and tools
-│   │
-│   ├── pages/                # Page components (one per tool)
-│   │   ├── Home.tsx                    # Landing page
-│   │   ├── DataTransform.tsx           # JSON/CSV/YAML/TOML/XML converter
-│   │   ├── Encoding.tsx                # Base64/URL encoding
-│   │   ├── TextUtilities.tsx           # Text manipulation tools
-│   │   ├── GeneratorToolkit.tsx        # UUID/Random/Lorem generator
-│   │   ├── HashVerify.tsx              # Hash/HMAC generator & password checker
-│   │   ├── JWTDecoder.tsx              # JWT token decoder
-│   │   ├── CodeFormatter.tsx           # Code beautifier/minifier
-│   │   ├── RegexTester.tsx             # Regex pattern tester
-│   │   ├── ColorPicker.tsx             # Color format converter
-│   │   ├── URLTools.tsx                # URL parser/encoder
-│   │   ├── QRCodeGenerator.tsx         # QR code generator
-│   │   ├── TimestampTools.tsx          # Timestamp converter & Cron parser
-│   │   ├── MarkdownPreviewer.tsx       # Markdown live editor
-│   │   ├── HTMLPlayground.tsx          # HTML/CSS/JS sandbox
-│   │   ├── JavaScriptRunner.tsx        # JavaScript executor
-│   │   ├── JSONTools.tsx               # (Coming soon)
-│   │   ├── CodeDiff.tsx                # (Coming soon)
-│   │   ├── SEOGenerator.tsx            # (Coming soon)
-│   │   ├── RegexPlayground.tsx         # (Coming soon)
-│   │   ├── ComingSoon.tsx              # Template for future tools
-│   │   └── NotFound.tsx                # 404 page
-│   │
-│   ├── types/                # TypeScript type definitions
-│   │   └── index.ts          # Shared types and interfaces
-│   │
-│   ├── utils/                # Utility functions
-│   │   └── helpers.ts        # Copy to clipboard, download file helpers
-│   │
-│   ├── App.tsx               # Main app component with routing
-│   ├── App.css               # App-specific styles
-│   ├── main.tsx              # Entry point with providers
-│   ├── index.css             # Global styles & Tailwind imports
-│   └── vite-env.d.ts         # Vite environment types
-│
-├── scripts/                  # Build and utility scripts
-│   ├── postbuild.sh          # Post-build hook
-│   └── prerender.mjs         # Pre-rendering script for SEO
-│
-├── docs/                     # Documentation
-│   └── (Additional docs as needed)
-│
-├── index.html               # HTML template
-├── package.json             # Dependencies and scripts
-├── tsconfig.json            # TypeScript configuration
-├── tsconfig.node.json       # TypeScript config for build tools
-├── vite.config.ts           # Vite build configuration
-├── tailwind.config.js       # Tailwind CSS configuration
-├── postcss.config.js        # PostCSS configuration
-├── LICENSE                  # MIT License
-└── README.md                # This file
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js v18 or higher
-- npm, yarn, or pnpm
-
-### Installation & Setup
+Requires **Node `^20.19` or `>=22.12`** and [pnpm](https://pnpm.io).
 
 ```bash
-# Clone the repository
 git clone https://github.com/0xdps/devutil-tools.git
 cd devutil-tools
-
-# Install dependencies
-npm install
-
-# Start development server (HMR enabled)
-npm run dev
-# App available at http://localhost:5173
-
-# Build for production
-npm run build
-
-# Preview production build locally
-npm run preview
-
-# Run linting
-npm run lint
-
-# Run tests
-npm run test
+pnpm install
+pnpm dev            # http://localhost:3000
 ```
 
-### Environment Variables
-
-**None required!** All tools run client-side with no backend dependencies.
-
-## 📖 Tool Documentation
-
-### Data Transformation Tools
-
-#### Data Transform
-
-Convert data between multiple formats with syntax validation.
-
-- **Supported Formats**: JSON ↔ CSV ↔ YAML ↔ TOML ↔ XML
-- **Features**: Real-time syntax highlighting, error detection, format validation
-- **Route**: `/data-transform`
-
-#### Encoding/Decoding
-
-Encode and decode text using various algorithms.
-
-- **Methods**: Base64, Base32, Base58, URL encoding, HTML entities, Data URIs
-- **Features**: Bidirectional conversion, copy to clipboard
-- **Route**: `/encoding`
-
-#### Text Utilities
-
-Manipulate and analyze text content.
-
-- **Case Conversion**: camelCase → PascalCase → snake_case → kebab-case → UPPER → lower
-- **Analysis**: Character count, word count, line count, unique word count
-- **Operations**: Remove extra spaces, remove blank lines, trim whitespace, sort lines, reverse text
-- **Route**: `/text-utilities`
-
-### Security & Cryptography Tools
-
-#### Generator Toolkit
-
-Generate various types of random data.
-
-- **UUID**: v1 (timestamp-based), v4 (random), v5 (namespace-based)
-- **Random Generation**: Customizable length, character sets (upper, lower, numbers, symbols)
-- **Lorem Ipsum**: Configurable paragraphs, words, or sentences
-- **Route**: `/generators`
-
-#### Hash & Verify
-
-Generate and verify cryptographic hashes.
-
-- **Algorithms**: MD5, SHA-1, SHA-256, SHA-512
-- **HMAC**: All SHA algorithms with optional secret key
-- **Password Strength**: Real-time analysis with visual feedback, strength indicators, and suggestions
-- **Route**: `/hash-verify`
-
-#### JWT Decoder
-
-Decode and analyze JWT tokens.
-
-- **Features**: Header/payload decoding, human-readable timestamps
-- **View Modes**: Table view for structured display, raw JSON view
-- **Timestamps**: Automatic conversion of iat, exp, nbf fields to readable dates
-- **Route**: `/jwt-decoder`
-
-### Code & Development Tools
-
-#### Code Formatter
-
-Beautify and minify code.
-
-- **Languages**: JSON, HTML, CSS, JavaScript
-- **Features**: Syntax highlighting, configurable indentation
-- **Options**: Beautify or minify, bracket spacing control
-- **Route**: `/code-formatter`
-
-#### Regex Tester
-
-Test and debug regular expressions.
-
-- **Features**: Pattern matching with real-time highlighting
-- **Flags**: Global (g), Case-insensitive (i), Multiline (m)
-- **Display**: Matched results with visual highlighting
-- **Route**: `/regex-tester`
-
-### Web & Design Tools
-
-#### Color Picker
-
-Convert and analyze colors.
-
-- **Formats**: HEX ↔ RGB ↔ HSL ↔ HSLA
-- **Visual Picker**: Interactive color selection
-- **Features**: Copy color values, color preview
-- **Route**: `/color-picker`
-
-#### URL Tools
-
-Parse and manipulate URLs.
-
-- **Parsing**: Break down URLs into components (protocol, host, path, query, fragment)
-- **Encoding/Decoding**: URL component encoding, query string analysis
-- **Features**: Copy components, usage examples
-- **Route**: `/url-tools`
-
-#### QR Code Generator
-
-Generate QR codes for various content types.
-
-- **Input Types**: Text, URLs, email addresses, phone numbers
-- **Features**: Customizable size, PNG download
-- **Use Cases**: Link sharing, contact information, WiFi networks
-- **Route**: `/qr-code`
-
-### Utilities
-
-#### Timestamp Tools
-
-Convert between Unix timestamps and human-readable dates.
-
-- **Conversion**: Unix timestamp ↔ ISO date string
-- **Current Time**: Generate current timestamp
-- **Cron Parser**: Parse and explain Cron expressions with examples
-- **Timezone Support**: UTC timezone handling
-- **Route**: `/timestamp-tools`
-
-### Developer Playgrounds
-
-#### Markdown Previewer
-
-Live markdown editor with side-by-side preview.
-
-- **Editor**: Full markdown syntax support
-- **Preview**: Real-time rendering as you type
-- **Features**: Syntax highlighting in editor
-- **Route**: `/markdown-previewer`
-
-#### HTML Playground
-
-Interactive sandbox for HTML, CSS, and JavaScript.
-
-- **Editors**: Separate tabs for HTML, CSS, and JavaScript
-- **Preview**: Live preview pane with instant updates
-- **Features**: Console output capture, error handling
-- **Route**: `/html-playground`
-
-#### JavaScript Runner
-
-Execute JavaScript code with console capture.
-
-- **Execution**: Safe sandboxed environment
-- **Console**: Capture console.log, console.error output
-- **Features**: Variable inspection, error messages
-- **Use Cases**: Test snippets, debug code, learn JavaScript
-- **Route**: `/js-runner`
-
-## 🎯 Development Roadmap
-
-### ✅ Phase 1-6: Foundation & Core Tools (COMPLETED)
-
-- React + TypeScript + Vite setup with Tailwind CSS
-- Responsive UI with dark/light theme toggle
-- Sidebar with fuzzy search navigation
-- All core utilities (16 tools implemented)
-- SEO implementation with structured data
-- Mobile-responsive design
-
-### 🚧 Phase 7: Advanced Features (IN PROGRESS)
-
-- [ ] JSON Tools suite (Diff, JSONPath, Schema Validator)
-- [ ] Code Diff tool with side-by-side comparison
-- [ ] SEO Generator for meta tags and cards
-- [ ] Regex Playground with pattern library
-- [ ] Favorites/bookmarks system
-- [ ] Keyboard shortcuts
-- [ ] Tool usage history (LocalStorage)
-
-### 💡 Phase 8: Future Enhancements
-
-- Progressive Web App (PWA) support
-- Shareable links with encoded data
-- API/REST endpoint tester
-- GraphQL query builder
-- WebSocket testing tool
-- curl → code converter
-- Environment variables diff & masker
-- JWT/JWE token generator
-- Browser extension version
-- Command palette (Cmd+K / Ctrl+K)
-- Multi-language support (i18n)
-
-## 📊 Project Statistics
-
-| Metric                   | Value                                           |
-| ------------------------ | ----------------------------------------------- |
-| Total Tools              | 20 (16 implemented, 4 coming soon)              |
-| Implementation Status    | 80%                                             |
-| TypeScript/TSX Code      | ~8,000+ lines                                   |
-| Bundle Size (gzipped)    | < 500KB                                         |
-| Lighthouse Score         | 95+                                             |
-| Browser Support          | Chrome, Firefox, Safari, Edge (last 2 versions) |
-| Zero Dependencies Issues | ✅ All packages maintained                      |
-
-## 🔧 Development Guide
-
-### Adding a New Tool
-
-1. **Create Component**
-
-   ```bash
-   # Create new file in src/pages/
-   touch src/pages/MyNewTool.tsx
-   ```
-
-2. **Add SEO Configuration**
-   - Edit `src/config/seoConfig.ts`
-   - Add metadata entry for the tool
-
-3. **Update Routing**
-   - Add route in `src/App.tsx`
-
-4. **Update Navigation**
-   - Add to sidebar list in `src/components/Sidebar.tsx`
-   - Update `public/sitemap.xml`
-
-5. **Component Template**
-
-   ```tsx
-   import SEO from "../components/SEO";
-   import { toolsMetadata } from "../config/seoConfig";
-
-   export default function MyNewTool() {
-     const meta = toolsMetadata.myNewTool;
-
-     return (
-       <>
-         <SEO
-           title={meta.title}
-           description={meta.description}
-           keywords={meta.keywords}
-           canonical={meta.canonical}
-         />
-         {/* Your tool UI here */}
-       </>
-     );
-   }
-   ```
-
-### Code Style Guidelines
-
-- **React**: Use functional components with hooks
-- **TypeScript**: Define types for all props and return values
-- **Styling**: Utility-first Tailwind CSS approach
-- **Components**: Keep components focused and reusable
-- **Utilities**: Extract common logic to `src/utils/`
-- **Naming**: Clear, descriptive names for variables and functions
-
-### Styling Conventions
-
-```tsx
-// Use Tailwind utility classes
-<div className="max-w-4xl mx-auto px-4">
-  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-    Title
-  </h1>
-</div>
-
-// Container sizing
-max-w-4xl: Most tools
-max-w-6xl: Wider layouts
-
-// Spacing
-space-y-4: Vertical rhythm
-space-x-4: Horizontal spacing
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Dev server with HMR |
+| `pnpm build` | Type-check, then production build into `dist/` (also writes per-route HTML, `sitemap.xml`, `_redirects`) |
+| `pnpm preview` | Build, then serve with the Cloudflare Workers runtime (`wrangler dev`) |
+| `pnpm test` | Unit tests (Vitest) |
+| `pnpm typecheck` | `tsc` for the app and the build tooling |
+| `pnpm lint` | ESLint (zero warnings allowed) |
+| `pnpm test:e2e` | After `pnpm build`: opens every route in a real browser, in light and dark, desktop and mobile, and runs an axe-core accessibility audit. Set `CHROME=/path/to/chrome` to use a system browser. |
+| `pnpm deploy` | Build and deploy to Cloudflare Workers |
+
+## Architecture
+
+**Stack:** React 19, TypeScript, Vite 8, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) on Radix, React Router 7, CodeMirror 6, Cloudflare Workers (static assets).
+
+```
+src/
+├── tools/
+│   ├── catalog.ts         # THE tool list: pure data (names, paths, tabs, keywords, SEO copy)
+│   ├── registry.ts        # binds an icon + lazy page to each catalog entry
+│   └── seo-head.ts        # builds <head> tags; shared by the app and the build
+├── pages/                 # one file per tool (+ Home, Contribution, NotFound)
+├── lib/                   # pure logic with unit tests: no React, no DOM
+│   ├── encoding.ts  jwt.ts  hash.ts  transform.ts  regex.ts  color.ts  cron.ts …
+│   └── *.test.ts
+├── components/
+│   ├── ui/                # shadcn components (owned here, edit freely)
+│   ├── tool/              # ToolPage, ToolPanel, CodeEditor, CopyButton, …
+│   └── layout/            # app shell, sidebar, ⌘K palette, smart paste
+├── hooks/                 # favorites/recents, tab URLs, worker hooks
+└── index.css              # design tokens (light/dark) and base styles
+vite-plugins/static-routes.ts   # per-route HTML, sitemap.xml, _redirects
+scripts/e2e.mjs                 # browser smoke + accessibility audit
+docs/                           # analytics, event tracking, shared-core plan
 ```
 
-## 🧪 Testing
+**Single source of truth.** `src/tools/catalog.ts` drives the sidebar, home page, ⌘K palette, routes, redirects, page titles/descriptions, structured data, the sitemap and the legacy-URL redirects. Adding a tool there makes it appear everywhere.
 
-```bash
-# Run all tests
-npm test
+**Logic lives in `src/lib/`.** Tool pages are thin: they call tested pure functions and render the result. This keeps the logic portable (for a future CLI; see [docs/SHARED_CORE_AND_CLI_PLAN.md](docs/SHARED_CORE_AND_CLI_PLAN.md)) and easy to test.
 
-# Run in watch mode
-npm run test:watch
+**SEO without prerendering.** At build time `vite-plugins/static-routes.ts` writes an HTML file per tool and tab (`/generators/lorem` → `generators/lorem.html`) with its own title, description, canonical URL, Open Graph tags and JSON-LD, plus a `<noscript>` fallback. In the browser the app removes that block at startup and manages the tags itself, so there are never duplicates. Legacy URLs get real 301s via `_redirects`.
 
-# Run with coverage
-npm run test:coverage
-```
+**Untrusted code is sandboxed.** The JavaScript Runner executes code in a Web Worker created from a `data:` URL (opaque origin: no access to this site's storage). The HTML Playground and Markdown preview render in sandboxed iframes without `allow-same-origin`; the Markdown preview also has a CSP that blocks scripts. Regexes run in a worker with a one-second limit.
 
-Tests are co-located with components using `.test.tsx` extension.
+## Adding a tool
 
-## 📦 Building for Production
+1. **Logic:** put it in `src/lib/<tool>.ts` as pure functions, with `<tool>.test.ts` beside it.
+2. **Page:** create `src/pages/<Tool>.tsx` using `ToolPage`, `ToolPanel`, `CodeEditor` and `CopyButton` from `src/components/tool`. Call `useToolOutput(...)` so `⌥⇧C` copies the result, and `useShareState(...)` if the input is safe to put in a link.
+3. **Register:** add an entry to `src/tools/catalog.ts` (name, path, category, keywords, features, `tabs` if it has them, and SEO copy in `TOOL_SEO`), and bind its icon and page in `src/tools/registry.ts`.
+4. **Check:** `pnpm typecheck && pnpm lint && pnpm test --run && pnpm build && pnpm test:e2e`.
 
-```bash
-# Build optimized production bundle
-npm run build
+`catalog.test.ts` enforces title length (≤ 60), description length (70–160), unique paths and titles, and that tab names match.
 
-# Output: static files in dist/ directory
+If a tool has tabs, list them in the catalog's `tabs` and use `useTabParam(TABS)` in the page; each tab gets its own URL (`/tool/tab`) and its own SEO copy.
 
-# Preview production build
-npm run preview
-```
+## Privacy
 
-### Deployment Options
+- **Tool processing is 100% client-side.** Inputs and results are not sent to our servers.
+- **Anonymous, aggregate usage statistics** (which pages/tools are opened) help prioritise improvements. Nothing you type into a tool is recorded, and there are no accounts. Details: [docs/ANALYTICS_SETUP.md](docs/ANALYTICS_SETUP.md), [docs/EVENT_TRACKING.md](docs/EVENT_TRACKING.md).
+- **Local preferences** (theme, favorites, recent tools, saved time zones) live in your browser only.
+- **One third-party script:** the privacy-oriented analytics script in `index.html`. Tool inputs are still processed locally; the only network use by a tool is stated in its UI (for example, the SEO Generator fetches a social image only if you click to preview it).
+- Don't treat any website as a secret store. Use copies you control for highly sensitive material, and note that the password strength checker is an estimate, not a guarantee.
 
-- **Vercel** (recommended) - Built-in optimizations for Vite
-- **Netlify** - Automatic deployments from git
-- **GitHub Pages** - Static hosting via workflow
-- **Cloudflare Pages** - Edge deployment
-- **AWS S3 + CloudFront** - Scalable CDN delivery
+## Browser support
 
-**Output**: Static files in `dist/` directory (no server required)
+Current and previous major versions of Chrome, Edge, Firefox and Safari (desktop and mobile). Share links use `CompressionStream` and fall back to uncompressed links where it is missing.
 
-## 🔒 Privacy & Security
+## Contributing
 
-### Privacy Guarantees
+Bug reports, tool ideas and pull requests are welcome. Start with [Contribute](https://devutil.codes/contribute) or open an [issue](https://github.com/0xdps/devutil-tools/issues). Keep each pull request focused, include tests for logic in `src/lib/`, and screenshots for UI changes. Run the checks listed under [Adding a tool](#adding-a-tool) before pushing.
 
-- ✅ **100% Client-Side Tools**: Tool processing happens in your browser; we do not send your tool inputs or results to our own backend to run those utilities
-- ✅ **Anonymous Usage Statistics**: We track **aggregate** usage (e.g. which routes and tools are used) to guide the roadmap—we do not use this to know your name, email, or identity, and the app does not require sign-in
-- ✅ **Open Source**: Full transparency—inspect code yourself
-- ✅ **Offline Capable**: With a cached build (PWA), many tools work offline; reconnecting may send queued analytics events (see `src/utils/analytics.ts`)
+## License
 
-**Details:** [docs/ANALYTICS_SETUP.md](docs/ANALYTICS_SETUP.md) · [docs/EVENT_TRACKING.md](docs/EVENT_TRACKING.md)
+MIT. See [LICENSE](LICENSE).
 
-### Security Notes
+## Author and support
 
-- Uses standard cryptographic libraries (crypto-js)
-- Password strength checker provides recommendations (not a security guarantee)
-- Sensitive content you paste into a tool stays in your session for that tool’s logic; do not treat the live site as a secret store—use copies you control for highly sensitive material
-- No user accounts or authentication required
-
-### Third-party scripts on the live site
-
-The deployed site may load small third-party scripts (for example **privacy-oriented analytics** and optional **support widgets**). Those services have their own policies; tool payloads are still processed locally unless a specific tool explicitly uses the network (clearly indicated in the UI).
-
-## 📱 Browser Support
-
-| Browser         | Support         |
-| --------------- | --------------- |
-| Chrome/Chromium | Last 2 versions |
-| Firefox         | Last 2 versions |
-| Safari          | Last 2 versions |
-| Edge            | Last 2 versions |
-| Mobile Chrome   | Last 2 versions |
-| Mobile Safari   | Last 2 versions |
-
-## 🤝 Contributing
-
-Contributions are welcome! Whether it's bug fixes, new features, or documentation improvements, we'd love your help.
-
-### How to Contribute
-
-1. **Fork the repository**
-2. **Create feature branch** (`git checkout -b feature/AmazingFeature`)
-3. **Commit changes** (`git commit -m 'Add AmazingFeature'`)
-4. **Push to branch** (`git push origin feature/AmazingFeature`)
-5. **Open Pull Request** with description of changes
-
-### Contribution Guidelines
-
-- Follow existing code style and conventions
-- Write meaningful commit messages
-- Add comments for complex logic
-- Update documentation if needed
-- Test changes thoroughly
-- Ensure TypeScript types are properly defined
-- Keep components focused and reusable
-
-### Areas for Contribution
-
-- 🐛 **Bug Fixes**: Report and fix issues
-- ✨ **New Tools**: Implement new utilities
-- 📚 **Documentation**: Improve or add docs
-- 🎨 **UI/UX**: Design improvements and polish
-- ♿ **Accessibility**: A11y enhancements
-- 🌐 **Internationalization**: i18n support
-- ⚡ **Performance**: Optimization opportunities
-- 🧪 **Tests**: Improve test coverage
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-Built with passion using:
-
-- [React](https://react.dev/) - UI framework
-- [Vite](https://vitejs.dev/) - Build tool
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
-- Open source community
-
-## 📧 Contact & Support
-
-**Author**: Devendra Pratap Singh
-
-- **GitHub**: [@0xdps](https://github.com/0xdps)
-- **Repository**: [github.com/0xdps/devutil-tools](https://github.com/0xdps/devutil-tools)
-
-### Report Issues
-
-Found a bug or have a feature request?
-
-- [Open an Issue](https://github.com/0xdps/devutil-tools/issues)
-- [Start a Discussion](https://github.com/0xdps/devutil-tools/discussions)
-
-### Feature Requests
-
-Have an idea for a new tool or feature? Please open an issue with:
-
-- Clear description of the feature
-- Use case and benefits
-- Example of how it would work
-
-## ⭐ Show Your Support
-
-If you find this project helpful, please consider:
-
-- ⭐ Starring this repository
-- 🔗 Sharing with other developers
-- 💬 Providing feedback and suggestions
-- 🤝 Contributing improvements
-
----
-
-**Made with ❤️ for developers, by developers**
-
-_Last Updated: March 2026_
+Built by [Devendra Pratap Singh](https://github.com/0xdps) ([0xdps.xyz](https://0xdps.xyz)). If DevUtil saves you time, a ⭐ on GitHub or a [coffee](https://buymeacoffee.com/0xdps) helps keep it free.

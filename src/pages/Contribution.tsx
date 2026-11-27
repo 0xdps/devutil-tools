@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Bug, GitFork, GitPullRequest, Lightbulb, Palette, Star, type LucideIcon } from 'lucide-react'
 import SEO from '@/components/SEO'
+import { pageMeta } from '@/tools/catalog'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
 import { GithubIcon } from '@/components/icons'
-import { toolsMetadata } from '@/config/seoConfig'
 import { site } from '@/config/site'
 
 const WAYS: { icon: LucideIcon; title: string; description: string; href?: string }[] = [
@@ -31,19 +31,10 @@ const ADD_TOOL = [
 ]
 
 export default function Contribution() {
-  const meta = toolsMetadata.contribution
 
   return (
     <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        type="website"
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-      />
+      <SEO meta={pageMeta('contribute', '/contribute')} />
       <div className="mx-auto max-w-4xl space-y-12">
         <section className="space-y-4 pt-2 sm:pt-6">
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Help build DevUtil</h1>
@@ -113,7 +104,7 @@ export default function Contribution() {
                   </div>
                   {step.code && (
                     <div className="flex items-start gap-2 rounded-lg border bg-code px-3 py-2">
-                      <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px]">{step.code}</pre>
+                      <pre tabIndex={0} aria-label={`Commands: ${step.title}`} className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">{step.code}</pre>
                       <CopyButton value={step.code} label="Copy command" iconOnly />
                     </div>
                   )}
@@ -137,7 +128,7 @@ export default function Contribution() {
           </dl>
           <p className="text-sm text-muted-foreground">
             Not sure where to start? Look at an existing tool like the{' '}
-            <Link to="/encoding" className="text-primary underline-offset-4 hover:underline">
+            <Link to="/encoding" className="text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
               Encode / Decode
             </Link>{' '}
             page and its tests.

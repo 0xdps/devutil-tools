@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Eraser, FlaskConical, KeyRound, Lock } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -10,8 +11,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import {
   CLAIM_LABELS,
   TIME_CLAIMS,
@@ -38,7 +37,7 @@ function formatClaimTime(seconds: number) {
 
 function ClaimsTable({ claims }: { claims: JsonObject }) {
   return (
-    <div className="overflow-x-auto">
+    <div tabIndex={0} role="region" aria-label="Claims" className="overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">
       <table className="w-full text-sm">
         <tbody>
           {Object.entries(claims).map(([key, value]) => {
@@ -198,7 +197,6 @@ export default function JWTDecoder() {
   return (
     <ToolPage
       toolId="jwt-decoder"
-      meta={toolsMetadata.jwtDecoder}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>A JWT is three Base64URL parts: header, payload (claims) and signature. Anyone can read the first two.</li>
@@ -278,16 +276,16 @@ export default function JWTDecoder() {
               title="Payload"
               actions={
                 <>
-                  <Tabs value={payloadView} onValueChange={(v) => setPayloadView(v as 'claims' | 'json')}>
-                    <TabsList className="h-7" aria-label="Payload view">
-                      <TabsTrigger value="claims" className="px-2 text-xs">
-                        Claims
-                      </TabsTrigger>
-                      <TabsTrigger value="json" className="px-2 text-xs">
-                        JSON
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  <SegmentedControl
+                    label="Payload view"
+                    size="sm"
+                    value={payloadView}
+                    onValueChange={setPayloadView}
+                    options={[
+                      { value: 'claims', label: 'Claims' },
+                      { value: 'json', label: 'JSON' },
+                    ]}
+                  />
                   <CopyButton value={JSON.stringify(jwt.payload, null, 2)} toolName="jwt_decoder" />
                 </>
               }

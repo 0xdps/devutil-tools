@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { CODE_LANGUAGES, formatCode, minifyCode, parseJsonStrict, queryJsonPath, type CodeLanguage, type JsonPathMatch } from '@/lib/code-format'
 
@@ -310,7 +309,7 @@ function JsonPathTab() {
             state.matches.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">{state.error ? 'Fix the error to see matches.' : 'No matches.'}</p>
             ) : (
-              <ol className="max-h-[32rem] divide-y overflow-auto">
+              <ol tabIndex={0} aria-label="JSONPath matches" className="max-h-[32rem] divide-y overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">
                 {state.matches.map((m) => (
                   <li key={m.path}>
                     <div className="flex items-center justify-between gap-2 px-3 pt-2">
@@ -331,12 +330,10 @@ function JsonPathTab() {
 
 export default function CodeAndJSONTools() {
   const [tab, setTab] = useTabParam(TABS)
-  const meta = tab === 'jsonpath' ? toolsMetadata.jsonTools : toolsMetadata.codeFormatter
 
   return (
     <ToolPage
       toolId="code-json"
-      meta={meta}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Formatting uses Prettier, loaded on demand in your browser. JSON is formatted natively, with exact line/column errors.</li>

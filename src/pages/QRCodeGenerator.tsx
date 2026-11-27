@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from '
 import QRCode from 'qrcode'
 import { Download, QrCode, TriangleAlert } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { CodeArea } from '@/components/tool/ToolPanel'
@@ -11,8 +12,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { contrastRatio, parseColor, relativeLuminance } from '@/lib/color'
 import { emailPayload, phonePayload, vcardPayload, wifiPayload, type ContactFields, type WifiSecurity } from '@/lib/qr-payload'
@@ -135,7 +134,6 @@ export default function QRCodeGenerator() {
   return (
     <ToolPage
       toolId="qr-code"
-      meta={toolsMetadata.qrCode}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Wi-Fi codes let phones join a network by scanning; special characters in the name or password are escaped for you.</li>
@@ -146,15 +144,18 @@ export default function QRCodeGenerator() {
     >
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="text">Text / URL</TabsTrigger>
-              <TabsTrigger value="wifi">Wi-Fi</TabsTrigger>
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="phone">Phone / SMS</TabsTrigger>
-              <TabsTrigger value="contact">Contact</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <SegmentedControl
+            label="QR code content"
+            value={tab}
+            onValueChange={setTab}
+            options={[
+              { value: 'text', label: 'Text / URL' },
+              { value: 'wifi', label: 'Wi-Fi' },
+              { value: 'email', label: 'Email' },
+              { value: 'phone', label: 'Phone / SMS' },
+              { value: 'contact', label: 'Contact' },
+            ]}
+          />
 
           <div className="space-y-3 rounded-xl border bg-card p-4 shadow-xs">
             {tab === 'text' && (
@@ -319,7 +320,7 @@ export default function QRCodeGenerator() {
                 <span className="text-xs text-muted-foreground">Encoded content</span>
                 <CopyButton value={deferredPayload} label="Copy encoded content" iconOnly />
               </div>
-              <pre className="max-h-32 overflow-auto px-1 font-mono text-xs whitespace-pre-wrap break-all">{deferredPayload}</pre>
+              <pre tabIndex={0} aria-label="Encoded content" className="max-h-32 overflow-auto px-1 font-mono text-xs whitespace-pre-wrap break-all outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">{deferredPayload}</pre>
             </div>
           )}
         </div>

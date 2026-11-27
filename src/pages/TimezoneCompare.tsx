@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowUpToLine, Check, Clock, Plus, X } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -8,9 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { toolsMetadata } from '@/config/seoConfig'
 import {
   allZones,
   describeZone,
@@ -166,7 +165,6 @@ export default function TimezoneCompare() {
   return (
     <ToolPage
       toolId="timezone-compare"
-      meta={toolsMetadata.timezoneCompare}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>The first city is the base: the planner’s columns are its hours, and differences are relative to it.</li>
@@ -176,14 +174,22 @@ export default function TimezoneCompare() {
       }
     >
       <div className="flex flex-wrap items-end gap-3">
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'now' | 'custom')}>
-          <TabsList>
-            <TabsTrigger value="now">
-              <Clock /> Now
-            </TabsTrigger>
-            <TabsTrigger value="custom">Pick a time</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <SegmentedControl
+          label="Time"
+          value={mode}
+          onValueChange={setMode}
+          options={[
+            {
+              value: 'now',
+              label: (
+                <>
+                  <Clock /> Now
+                </>
+              ),
+            },
+            { value: 'custom', label: 'Pick a time' },
+          ]}
+        />
         {mode === 'custom' && (
           <>
             <div className="space-y-1.5">
@@ -271,7 +277,7 @@ export default function TimezoneCompare() {
                   </Button>
                 </div>
               </div>
-              <div className="overflow-x-auto px-4 pt-2 pb-3">
+              <div tabIndex={0} role="region" aria-label={`${info.city} 24-hour planner`} className="overflow-x-auto px-4 pt-2 pb-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">
                 <div className="grid min-w-[40rem] grid-cols-24 gap-0.5" role="group" aria-label={`${info.city} hours`}>
                   {hourInstants.map((hourInstant, h) => {
                     const local = zonedParts(zone, hourInstant)
@@ -282,15 +288,17 @@ export default function TimezoneCompare() {
                         type="button"
                         onClick={() => pickHour(h)}
                         className={cn(
-                          'h-8 rounded-sm font-mono text-[11px] tabular-nums transition-colors hover:ring-1 hover:ring-ring',
+                          'relative h-8 rounded-sm font-mono text-[11px] tabular-nums transition-colors hover:ring-1 hover:ring-ring',
                           KIND_STYLES[hourKind(local.hour)],
                           shared.has(h) && 'ring-1 ring-success/60',
                           selected && 'ring-2 ring-primary',
                         )}
-                        aria-label={`${pad(local.hour)}:${pad(local.minute)} in ${info.city}`}
                         aria-pressed={selected}
                       >
                         {local.hour}
+                        <span className="sr-only">
+                          :{pad(local.minute)} in {info.city}
+                        </span>
                       </button>
                     )
                   })}

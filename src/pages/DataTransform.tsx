@@ -9,7 +9,6 @@ import { DownloadButton } from '@/components/tool/DownloadButton'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toolsMetadata } from '@/config/seoConfig'
 import { describeJsonError } from '@/lib/code-format'
 import { DATA_FORMATS, convertData, detectFormat, type DataFormat } from '@/lib/transform'
 
@@ -93,7 +92,6 @@ export default function DataTransform() {
   return (
     <ToolPage
       toolId="data-transform"
-      meta={toolsMetadata.dataTransform}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>CSV output flattens nested objects into dot-separated columns (address.city) and writes arrays as JSON.</li>

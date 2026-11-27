@@ -49,7 +49,7 @@ export function ConsolePanel({ entries, onClear, className }: { entries: Console
           Clear
         </Button>
       </div>
-      <div ref={logRef} className="min-h-40 flex-1 overflow-auto bg-code font-mono text-[13px]" role="log" aria-live="polite">
+      <div ref={logRef} tabIndex={0} aria-label="Console output" className="min-h-40 flex-1 overflow-auto bg-code font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50" role="log" aria-live="polite">
         {entries.length === 0 ? (
           <p className="px-3 py-2 font-sans text-sm text-muted-foreground">Output from console.log() appears here.</p>
         ) : (

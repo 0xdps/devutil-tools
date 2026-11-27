@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { toolsMetadata } from '@/config/seoConfig'
 import { formatBytes } from '@/lib/format'
 
 const MAX_FILE = 5 * 1024 * 1024
@@ -139,7 +138,6 @@ export default function CodeDiff() {
   return (
     <ToolPage
       toolId="text-diff"
-      meta={toolsMetadata.codeDiff}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Both sides are editable; the diff updates as you type. Changed words within a line are highlighted.</li>

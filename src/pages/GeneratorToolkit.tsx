@@ -14,7 +14,6 @@ import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { toolsMetadata } from '@/config/seoConfig'
 import { useTabParam } from '@/hooks/use-tab-param'
 import { formatRelative } from '@/lib/jwt'
 import {
@@ -100,7 +99,7 @@ function OutputList({
           </p>
         ) : items.length > 1 && items.every((i) => i.length <= 12) ? (
           // Short values (numbers): compact chips instead of one tall row each
-          <ul className="flex max-h-[28rem] flex-wrap gap-1.5 overflow-auto bg-code p-3" aria-live="polite">
+          <ul tabIndex={0} aria-label={title} className="flex max-h-[28rem] flex-wrap gap-1.5 overflow-auto bg-code p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50" aria-live="polite">
             {items.map((item, i) => (
               <li key={`${i}-${item}`} className="rounded-md border bg-background px-2 py-0.5 font-mono text-[13px] tabular-nums">
                 {item}
@@ -108,7 +107,7 @@ function OutputList({
             ))}
           </ul>
         ) : (
-          <ul className="max-h-[28rem] divide-y overflow-auto bg-code" aria-live="polite">
+          <ul tabIndex={0} aria-label={title} className="max-h-[28rem] divide-y overflow-auto bg-code outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50" aria-live="polite">
             {items.map((item, i) => (
               <li key={`${i}-${item}`} className="group flex items-start gap-2 px-3 py-2">
                 <span className={mono ? 'min-w-0 flex-1 font-mono text-[13px] break-all' : 'min-w-0 flex-1 text-sm whitespace-pre-wrap'}>
@@ -438,7 +437,7 @@ function LoremTab() {
         }
         footer={`${text.split(/\s+/).filter(Boolean).length} words · ${text.length} characters`}
       >
-        {() => <div className="max-h-[32rem] space-y-3 overflow-auto bg-code px-4 py-3 text-sm leading-relaxed">{text.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}</div>}
+        {() => <div tabIndex={0} role="region" aria-label="Placeholder text" className="max-h-[32rem] space-y-3 overflow-auto bg-code px-4 py-3 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">{text.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}</div>}
       </ToolPanel>
     </div>
   )
@@ -452,7 +451,6 @@ export default function GeneratorToolkit() {
   return (
     <ToolPage
       toolId="generators"
-      meta={toolsMetadata.generators}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Everything is generated with the Web Crypto API (crypto.getRandomValues), with no modulo bias.</li>

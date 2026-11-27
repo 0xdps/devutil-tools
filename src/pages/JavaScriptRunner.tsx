@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toolsMetadata } from '@/config/seoConfig'
 import { workerSource, type SandboxMessage } from '@/lib/js-sandbox'
 import { modKey } from '@/lib/platform'
 
@@ -112,7 +111,6 @@ export default function JavaScriptRunner() {
   return (
     <ToolPage
       toolId="js-runner"
-      meta={toolsMetadata.jsRunner}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Code runs in a Web Worker with an opaque origin: it can’t read this site’s storage, cookies or page, and it can’t freeze the tab.</li>
@@ -128,7 +126,7 @@ export default function JavaScriptRunner() {
           </Button>
         ) : (
           <Button onClick={run}>
-            <Play /> Run <Kbd className="ml-1 bg-primary-foreground/15 text-primary-foreground">{modKey} ↵</Kbd>
+            <Play /> Run <Kbd className="ml-1 border border-primary-foreground/50 bg-transparent text-primary-foreground">{modKey} ↵</Kbd>
           </Button>
         )}
         <Label className="ml-2 text-xs font-normal text-muted-foreground" htmlFor="js-timeout">

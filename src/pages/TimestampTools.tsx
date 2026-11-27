@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import { formatAll, parseTimeInput, UNIT_LABELS, type EpochUnit } from '@/lib/timestamp'
 import { formatRelative } from '@/lib/jwt'
 import { CRON_FIELDS, nextRuns, parseCron } from '@/lib/cron'
@@ -131,8 +130,10 @@ function TimestampTab() {
               {formatAll(parsed.date).map((f) => (
                 <div key={f.id} className="group flex items-center gap-3 px-3 py-2">
                   <dt className="w-36 shrink-0 text-xs text-muted-foreground">{f.label}</dt>
-                  <dd className="min-w-0 flex-1 font-mono text-[13px] break-all">{f.value}</dd>
-                  <CopyButton value={f.value} label={`Copy ${f.label}`} iconOnly toolName="timestamp_tools" />
+                  <dd className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="min-w-0 flex-1 font-mono text-[13px] break-all">{f.value}</span>
+                    <CopyButton value={f.value} label={`Copy ${f.label}`} iconOnly toolName="timestamp_tools" />
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -256,7 +257,6 @@ export default function TimestampTools() {
   return (
     <ToolPage
       toolId="timestamp-tools"
-      meta={toolsMetadata.timestampTools}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>A Unix timestamp counts seconds since 1970-01-01 00:00:00 UTC. JavaScript and many APIs use milliseconds.</li>

@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Play, RotateCcw, ShieldCheck } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { ConsolePanel, type ConsoleEntry } from '@/components/tool/ConsolePanel'
@@ -8,8 +9,6 @@ import { DownloadButton } from '@/components/tool/DownloadButton'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import { playgroundDocument, standaloneDocument } from '@/lib/html-sandbox'
 import type { ConsoleLevel } from '@/lib/js-sandbox'
 
@@ -110,7 +109,6 @@ export default function HTMLPlayground() {
   return (
     <ToolPage
       toolId="html-playground"
-      meta={toolsMetadata.htmlPlayground}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>The preview is a sandboxed iframe with its own opaque origin: scripts run, but can’t reach this site, its storage or cookies.</li>
@@ -140,13 +138,16 @@ export default function HTMLPlayground() {
       <div className="grid gap-3 lg:grid-cols-2">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card shadow-xs" aria-label="Source">
           <div className="flex h-11 items-center border-b px-2">
-            <Tabs value={pane} onValueChange={(v) => setPane(v as Pane)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="html">HTML</TabsTrigger>
-                <TabsTrigger value="css">CSS</TabsTrigger>
-                <TabsTrigger value="js">JavaScript</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <SegmentedControl
+              label="Source file"
+              value={pane}
+              onValueChange={setPane}
+              options={[
+                { value: 'html', label: 'HTML' },
+                { value: 'css', label: 'CSS' },
+                { value: 'js', label: 'JavaScript' },
+              ]}
+            />
           </div>
           {/* One editor per pane keeps undo history separate */}
           {(['html', 'css', 'js'] as Pane[]).map((p) => (

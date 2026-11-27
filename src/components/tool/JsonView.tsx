@@ -5,8 +5,8 @@ const TOKEN = /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|nu
 
 function classFor(token: string): string {
   if (token.startsWith('"')) return token.trimEnd().endsWith(':') ? 'text-primary' : 'text-success'
-  if (token === 'true' || token === 'false' || token === 'null') return 'text-chart-4'
-  return 'text-warning'
+  if (token === 'true' || token === 'false' || token === 'null') return 'text-[var(--syn-keyword)]'
+  return 'text-[var(--syn-number)]'
 }
 
 /** Pretty-printed, syntax-colored JSON. Renders spans (no innerHTML). */
@@ -42,7 +42,7 @@ export function JsonView({ value, className }: { value: unknown; className?: str
   }, [value])
 
   return (
-    <pre className={cn('overflow-auto bg-code px-3 py-2.5 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words', className)}>
+    <pre tabIndex={0} className={cn('overflow-auto bg-code px-3 py-2.5 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50', className)}>
       <code>{nodes}</code>
     </pre>
   )

@@ -5,10 +5,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { staticRoutes } from './vite-plugins/static-routes'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), react(), VitePWA({
+    plugins: [tailwindcss(), react(), staticRoutes(), VitePWA({
         registerType: 'prompt',
         includeAssets: ['favicon.ico', 'logo.svg', 'robots.txt'],
         manifest: {

@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { toolsMetadata } from '@/config/seoConfig'
 import { contrastRatio, formatAll, generateScale, parseColor, readableTextOn, toHex, wcagLevels, type Rgba } from '@/lib/color'
 import { cn } from '@/lib/utils'
 
@@ -123,7 +122,6 @@ export default function ColorPicker() {
   return (
     <ToolPage
       toolId="color-picker"
-      meta={toolsMetadata.colorPicker}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>Accepts any CSS color: hex (3, 4, 6 or 8 digits), rgb(), hsl(), hwb(), oklch() and the 148 named colors.</li>
@@ -153,8 +151,10 @@ export default function ColorPicker() {
               {formats.map((f) => (
                 <div key={f.id} className="flex items-center gap-3 px-3 py-2.5">
                   <dt className="w-16 shrink-0 text-xs text-muted-foreground">{f.label}</dt>
-                  <dd className="min-w-0 flex-1 font-mono text-[13px] break-all">{f.value}</dd>
-                  <CopyButton value={f.value} label={`Copy ${f.label}`} iconOnly toolName="color_picker" />
+                  <dd className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="min-w-0 flex-1 font-mono text-[13px] break-all">{f.value}</span>
+                    <CopyButton value={f.value} label={`Copy ${f.label}`} iconOnly toolName="color_picker" />
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -199,7 +199,7 @@ export default function ColorPicker() {
         </div>
         {bg.color && levels && (
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border p-4" style={{ background: css({ ...bg.color, a: 1 }), color: css(color) }}>
+            <div data-a11y-demo className="rounded-lg border p-4" style={{ background: css({ ...bg.color, a: 1 }), color: css(color) }}>
               <p className="text-sm">Normal text: the quick brown fox jumps over the lazy dog.</p>
               <p className="mt-1 text-xl font-semibold">Large text, 18pt or 14pt bold</p>
             </div>

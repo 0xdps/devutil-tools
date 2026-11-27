@@ -8,7 +8,6 @@ import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { DownloadButton } from '@/components/tool/DownloadButton'
-import { toolsMetadata } from '@/config/seoConfig'
 import { markdownDocument } from '@/lib/markdown-doc'
 import { textStats } from '@/lib/text'
 
@@ -49,7 +48,6 @@ export default function MarkdownPreviewer() {
   return (
     <ToolPage
       toolId="markdown-previewer"
-      meta={toolsMetadata.markdownPreviewer}
       reference={
         <ul className="list-disc space-y-1 pl-5">
           <li>GitHub-flavored Markdown: tables, task lists, strikethrough and fenced code blocks.</li>

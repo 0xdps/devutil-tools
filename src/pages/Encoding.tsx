@@ -2,13 +2,12 @@ import { useDeferredValue, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowLeftRight, CircleAlert, Eraser } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
 import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toolsMetadata } from '@/config/seoConfig'
 import { transform, type EncodingScheme } from '@/lib/encoding'
 
 type Mode = 'encode' | 'decode'
@@ -66,7 +65,6 @@ export default function Encoding() {
   return (
     <ToolPage
       toolId="encoding"
-      meta={toolsMetadata.encoding}
       reference={
         <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {schemes.map((s) => (
@@ -94,12 +92,15 @@ export default function Encoding() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-          <TabsList aria-label="Direction">
-            <TabsTrigger value="encode">Encode</TabsTrigger>
-            <TabsTrigger value="decode">Decode</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <SegmentedControl
+          label="Direction"
+          value={mode}
+          onValueChange={setMode}
+          options={[
+            { value: 'encode', label: 'Encode' },
+            { value: 'decode', label: 'Decode' },
+          ]}
+        />
       </div>
 
       <p className="-mt-2 text-sm text-muted-foreground">{active.hint}</p>

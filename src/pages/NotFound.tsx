@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Helmet } from 'react-helmet-async'
+import SEO from '@/components/SEO'
+import { pageMeta } from '@/tools/catalog'
 import { ArrowLeft, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
@@ -28,21 +29,18 @@ export default function NotFound() {
 
   return (
     <>
-      <Helmet>
-        <title>Page not found | {site.name}</title>
-        <meta name="robots" content="noindex" />
-      </Helmet>
+      <SEO meta={pageMeta('notFound', pathname)} noindex />
       <div className="mx-auto max-w-2xl space-y-8 py-8 text-center sm:py-16">
         <div className="space-y-3">
           <p className="font-mono text-sm text-primary">404</p>
           <h1 className="text-3xl font-semibold tracking-tight">This page doesn’t exist</h1>
           <p className="text-muted-foreground">
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">{pathname}</code> isn’t a tool. It may have moved.
+            <code className="rounded bg-muted px-1.5 py-0.5 text-sm break-all">{pathname}</code> isn’t a tool. It may have moved.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button onClick={() => setOpen(true)}>
-            <Search /> Search tools <Kbd className="ml-1 bg-primary-foreground/15 text-primary-foreground">{modKey} K</Kbd>
+            <Search /> Search tools <Kbd className="ml-1 border border-primary-foreground/50 bg-transparent text-primary-foreground">{modKey} K</Kbd>
           </Button>
           <Button variant="outline" asChild>
             <Link to="/">
@@ -54,12 +52,12 @@ export default function NotFound() {
           <h2 id="suggested" className="text-sm font-semibold text-muted-foreground">
             {suggestions.length < visibleTools.length ? 'Were you looking for' : 'Popular tools'}
           </h2>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {suggestions.map((tool) => {
               const Icon = tool.icon
               return (
-                <li key={tool.id}>
-                  <Link to={tool.path} className="flex items-center gap-3 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:border-primary/40 hover:bg-accent/40">
+                <li key={tool.id} className="min-w-0">
+                  <Link to={tool.path} className="flex min-w-0 items-center gap-3 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:border-primary/40 hover:bg-accent/40">
                     <Icon className="size-4 shrink-0 text-primary" />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{tool.name}</span>
@@ -73,7 +71,7 @@ export default function NotFound() {
         </section>
         <p className="text-sm text-muted-foreground">
           Followed a broken link?{' '}
-          <a href={site.issuesUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">
+          <a href={site.issuesUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
             Let us know
           </a>
           .

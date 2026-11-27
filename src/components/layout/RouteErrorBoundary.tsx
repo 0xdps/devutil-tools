@@ -37,7 +37,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
         <h1 className="text-lg font-semibold">This tool hit an error</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Nothing was sent anywhere. Try again, or{' '}
-          <a className="text-primary underline-offset-4 hover:underline" href={site.issuesUrl} target="_blank" rel="noopener noreferrer">
+          <a className="text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary" href={site.issuesUrl} target="_blank" rel="noopener noreferrer">
             report it
           </a>{' '}
           with what you were doing.
