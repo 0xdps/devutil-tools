@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { diffLines, type Change } from 'diff'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import SEO from '../components/SEO'
 import { toolsMetadata } from '../config/seoConfig'
 

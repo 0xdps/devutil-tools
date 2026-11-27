@@ -1,10 +1,10 @@
+// Legacy palette kept only for pages not yet migrated to design tokens (src/index.css).
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
-    darkMode: 'class',
     theme: {
         extend: {
             colors: {
@@ -66,10 +66,6 @@ export default {
                     card: '#1a1b26',
                     border: '#2a2b3a',
                 },
-            },
-            fontFamily: {
-                sans: ['Inter var', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                mono: ['Fira Code', 'Monaco', 'Cascadia Code', 'Consolas', 'monospace'],
             },
             boxShadow: {
                 'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',

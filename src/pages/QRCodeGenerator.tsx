@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import QRCode from 'qrcode'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import SEO from '../components/SEO'
 import { toolsMetadata } from '../config/seoConfig'
 

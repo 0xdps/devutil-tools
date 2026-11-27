@@ -10,7 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- PWA -->
-    <meta name="theme-color" content="#1a1b26" />
+    <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0f15" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -62,15 +63,20 @@
     <meta name="googlebot" content="index, follow" />
     <link rel="canonical" href="https://devutil.codes/" />
 
+    <script>
+      // Apply the saved theme before first paint (mirrors ThemeProvider).
+      (function () {
+        try {
+          var t = localStorage.getItem('devutil-theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.add(dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <style>
-      /* Prevent layout shift while CSS loads */
-      #root {
-        min-height: 100vh;
-      }
-      body {
-        margin: 0;
-        background-color: #f9fafb;
-      }
+      #root { min-height: 100vh; }
+      body { margin: 0; background-color: #fbfbfd; }
+      html.dark body { background-color: #0e0f15; }
     </style>
   </head>
 

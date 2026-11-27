@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { v1 as uuidv1, v4 as uuidv4, v5 as uuidv5 } from 'uuid'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import SEO from '../components/SEO'
 import { toolsMetadata } from '../config/seoConfig'
 

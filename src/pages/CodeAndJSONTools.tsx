@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import SEO from '../components/SEO'
 import { toolsMetadata } from '../config/seoConfig'
 import CustomSelect from '../components/CustomSelect'

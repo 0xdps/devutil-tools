@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -86,6 +87,11 @@ export default defineConfig({
         },
     }), cloudflare()],
     base: '/',
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
+        },
+    },
     server: {
         port: 3000,
         open: true,
@@ -98,35 +104,15 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: (id) => {
-                    // Vendor chunks - separate large dependencies
-                    if (id.includes('node_modules')) {
-                        // React and React DOM (core framework)
-                        if (id.includes('react') || id.includes('react-dom')) {
-                            return 'vendor-react'
-                        }
-                        // React Router (routing)
-                        if (id.includes('react-router')) {
-                            return 'vendor-router'
-                        }
-                        // Data transformation libraries
-                        if (id.includes('diff') || id.includes('js-yaml') || id.includes('toml') || id.includes('csv') || id.includes('jsonpath')) {
-                            return 'vendor-data'
-                        }
-                        // UI/UX libraries
-                        if (id.includes('react-hot-toast') || id.includes('react-helmet') || id.includes('fuse.js')) {
-                            return 'vendor-ui'
-                        }
-                        // Crypto/hashing libraries
-                        if (id.includes('crypto') || id.includes('hash') || id.includes('jwt') || id.includes('bcrypt')) {
-                            return 'vendor-crypto'
-                        }
-                        // QR code and encoding libraries
-                        if (id.includes('qrcode') || id.includes('base64') || id.includes('encoding')) {
-                            return 'vendor-encoding'
-                        }
-                        // Everything else from node_modules
-                        return 'vendor'
-                    }
+                    if (!id.includes('node_modules')) return
+                    const pkg = (name: RegExp) => new RegExp(`[\\\\/]node_modules[\\\\/]${name.source}[\\\\/]`).test(id)
+                    if (pkg(/(react|react-dom|scheduler)/)) return 'vendor-react'
+                    if (pkg(/(react-router|react-router-dom)/)) return 'vendor-router'
+                    // Design system: Radix primitives, cmdk, icons, toasts, panels
+                    if (pkg(/(@radix-ui[\\\\/][^\\\\/]+|radix-ui|cmdk|lucide-react|sonner|next-themes|react-resizable-panels|cn|class-variance-authority|@floating-ui[\\\\/][^\\\\/]+)/)) return 'vendor-ui'
+                    // Everything else is split naturally, so libraries used by a
+                    // single lazy tool page load only with that page.
+                    return undefined
                 },
                 chunkFileNames: 'assets/[name]-[hash].js',
                 entryFileNames: 'assets/[name]-[hash].js',

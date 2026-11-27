@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import * as yaml from 'js-yaml'
 import Papa from 'papaparse'
 import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml'

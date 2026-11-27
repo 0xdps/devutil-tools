@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import cronstrue from 'cronstrue'
 import SEO from '../components/SEO'
 import { toolsMetadata } from '../config/seoConfig'

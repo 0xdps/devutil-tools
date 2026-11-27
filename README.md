@@ -70,11 +70,12 @@
 
 ### Core Technologies
 
-- **React 18.3.1** - UI framework with hooks and context
-- **TypeScript 5.5.4** - Type-safe development
-- **Vite 5.x** - Fast build tool with HMR
-- **Tailwind CSS 3.4** - Utility-first styling
-- **React Router 6.26** - Client-side routing
+- **React 19** - UI framework
+- **TypeScript 5.9** - Type-safe development
+- **Vite 8** - Build tool with HMR
+- **Tailwind CSS 4** - Utility-first styling with CSS-variable design tokens (light, dark, system)
+- **shadcn/ui + Radix** - Accessible UI components, owned in `src/components/ui`
+- **React Router 7** - Client-side routing, generated from the tool registry (`src/tools/registry.ts`)
 
 ### Key Libraries
 
@@ -92,7 +93,9 @@
 | `cronstrue`          | Cron expression parsing          |
 | `fuse.js`            | Fuzzy search for tool navigation |
 | `diff`               | Text/code comparison             |
-| `react-hot-toast`    | Toast notifications              |
+| `sonner`             | Toast notifications              |
+| `cmdk`               | ⌘K command palette               |
+| `lucide-react`       | Icons                            |
 
 ## 📦 Project Structure
 
