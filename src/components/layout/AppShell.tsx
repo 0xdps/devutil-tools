@@ -26,6 +26,9 @@ function SiteFooter() {
           © {new Date().getFullYear()} {site.fullName}. Open source, free forever.
         </p>
         <nav className="flex items-center gap-4">
+          <Link to="?modal=support" className="hover:text-foreground">
+            Support
+          </Link>
           <Link to="/contribute" className="hover:text-foreground">
             Contribute
           </Link>

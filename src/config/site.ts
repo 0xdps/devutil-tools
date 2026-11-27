@@ -6,4 +6,5 @@ export const site = {
   repoUrl: 'https://github.com/0xdps/devutil-tools',
   issuesUrl: 'https://github.com/0xdps/devutil-tools/issues',
   authorUrl: 'https://0xdps.xyz',
+  donateUrl: 'https://buymeacoffee.com/0xdps',
 } as const

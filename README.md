@@ -104,7 +104,6 @@ devutil-tools/
 ├── public/                   # Static assets & SEO files
 │   ├── robots.txt            # Search engine crawler rules
 │   ├── sitemap.xml           # Site structure for SEO
-│   ├── 404.html              # 404 error page
 │   └── CNAME                 # Custom domain config
 │
 ├── src/

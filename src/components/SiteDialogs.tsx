@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Bug, Code2, Lock, BarChart3, Cookie, Star } from 'lucide-react'
+import { Bug, Code2, Coffee, Lock, BarChart3, Cookie, Star } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -72,6 +72,12 @@ export function SupportDialog({ open, onOpenChange }: SiteDialogProps) {
           <DialogDescription>{site.fullName} is free and open source.</DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
+          <Section icon={Coffee} title="Buy me a coffee">
+            Donations keep the project free and ad-free.{' '}
+            <a href={site.donateUrl} target="_blank" rel="noopener noreferrer">
+              Support on Buy Me a Coffee
+            </a>
+          </Section>
           <Section icon={Star} title="Star it on GitHub">
             A star helps other developers find the project.{' '}
             <a href={site.repoUrl} target="_blank" rel="noopener noreferrer">
