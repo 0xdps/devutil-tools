@@ -296,11 +296,11 @@ export const tools: ToolDefinition[] = [
   {
     id: 'timezone-compare',
     name: 'Timezone Compare',
-    description: 'Compare times across multiple timezones',
+    description: 'World clock and meeting planner across time zones',
     path: '/timezone-compare',
     category: 'time',
     icon: Globe,
-    keywords: ['timezone', 'time zone', 'utc', 'world clock', 'meeting planner'],
+    keywords: ['timezone', 'time zone', 'utc', 'world clock', 'meeting planner', 'dst', 'gmt', 'convert time'],
     component: lazy(() => import('@/pages/TimezoneCompare')),
   },
 
