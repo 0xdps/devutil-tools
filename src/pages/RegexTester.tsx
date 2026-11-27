@@ -28,7 +28,7 @@ const TABS = ['match', 'replace'] as const
 
 const LIBRARY: { name: string; pattern: string; flags: string; sample: string }[] = [
   { name: 'Email address', pattern: '[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+', flags: 'g', sample: 'Contact ada@example.com or alan.turing+news@cs.ox.ac.uk today.' },
-  { name: 'URL', pattern: 'https?:\\/\\/[^\\s/$.?#][^\\s]*', flags: 'gi', sample: 'Docs at https://devutil.codes/docs and http://localhost:3000/api?x=1' },
+  { name: 'URL', pattern: 'https?:\\/\\/[^\\s/$.?#][^\\s]*', flags: 'gi', sample: 'Docs at https://localplus.app/docs and http://localhost:3000/api?x=1' },
   { name: 'IPv4 address', pattern: '\\b(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\b', flags: 'g', sample: 'Hosts: 10.0.0.1, 192.168.1.254, 256.1.1.1 (invalid)' },
   { name: 'ISO date (named groups)', pattern: '(?<year>\\d{4})-(?<month>0[1-9]|1[0-2])-(?<day>0[1-9]|[12]\\d|3[01])', flags: 'g', sample: 'Released 2024-03-15, patched 2024-13-01 (invalid), EOL 2026-12-31.' },
   { name: 'Hex color', pattern: '#(?:[0-9a-fA-F]{3}){1,2}\\b', flags: 'g', sample: 'Brand #0ea5e9, text #111, invalid #12345.' },

@@ -1,9 +1,9 @@
-# robots.txt for devutil.codes
+# robots.txt for localplus.app
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://devutil.codes/sitemap.xml
+Sitemap: https://localplus.app/sitemap.xml
 
 # Crawl-delay for bots
 Crawl-delay: 1

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allRoutes, catalog, toolMeta, toolPath } from './catalog'
+import { allRoutes, catalog, pageMeta, SITE_NAME, SITE_URL, toolMeta, toolPath } from './catalog'
 import { buildHead, renderHead } from './seo-head'
 
 describe('catalog', () => {
@@ -10,6 +10,13 @@ describe('catalog', () => {
       expect(r.documentTitle.length, r.documentTitle).toBeLessThanOrEqual(60)
       expect(r.description.length, r.path).toBeGreaterThanOrEqual(70)
       expect(r.description.length, r.path).toBeLessThanOrEqual(160)
+    }
+  })
+
+  it('the brand appears once in each document title (home leads with it)', () => {
+    for (const r of routes) {
+      const count = r.documentTitle.split(SITE_NAME).length - 1
+      expect(count, r.documentTitle).toBe(1)
     }
   })
 
@@ -41,8 +48,8 @@ describe('seo-head', () => {
   it('emits canonical, social tags and honest structured data', () => {
     const tool = catalog.find((t) => t.id === 'generators')!
     const head = buildHead(toolMeta(tool, 'lorem'))
-    expect(head.links).toEqual([{ rel: 'canonical', href: 'https://devutil.codes/generators/lorem' }])
-    expect(head.meta).toContainEqual({ property: 'og:url', content: 'https://devutil.codes/generators/lorem' })
+    expect(head.links).toEqual([{ rel: 'canonical', href: 'https://localplus.app/generators/lorem' }])
+    expect(head.meta).toContainEqual({ property: 'og:url', content: 'https://localplus.app/generators/lorem' })
     const json = JSON.stringify(head.jsonLd)
     expect(json).toContain('"WebApplication"')
     expect(json).not.toMatch(/aggregateRating|"Review"/) // never invent ratings or reviews
@@ -52,6 +59,25 @@ describe('seo-head', () => {
     expect(html).toContain('<title>A &amp; B</title>')
     expect(html).toContain('content="A &quot;B&quot; &lt;C&gt;"')
     expect(html).not.toMatch(/<\/script><script/)
+  })
+  it('home page declares the Organization and WebSite that tool pages reference', () => {
+    const home = buildHead(pageMeta('home', '/')).jsonLd as Record<string, unknown>[]
+    const ids = new Set(home.map((j) => j['@id']))
+    expect(ids).toEqual(new Set([`${SITE_URL}/#website`, `${SITE_URL}/#organization`]))
+    const tool = buildHead(toolMeta(catalog[0])).jsonLd[0] as Record<string, Record<string, string>>
+    expect(ids.has(tool.publisher['@id'])).toBe(true)
+    expect(ids.has(tool.isPartOf['@id'])).toBe(true)
+  })
+  it('uses the brand and domain everywhere, with a correctly sized social image', () => {
+    expect(SITE_NAME).toBe('LocalPlus')
+    expect(SITE_URL).toBe('https://localplus.app')
+    const head = buildHead(toolMeta(catalog[0]))
+    expect(head.meta).toContainEqual({ property: 'og:site_name', content: 'LocalPlus' })
+    expect(head.meta).toContainEqual({ property: 'og:image', content: 'https://localplus.app/og-image.png' })
+    expect(head.meta).toContainEqual({ property: 'og:image:width', content: '1200' })
+    expect(head.meta).toContainEqual({ property: 'og:image:height', content: '630' })
+    const everything = JSON.stringify([allRoutes(), head])
+    expect(everything).not.toMatch(/devutil\.codes|DevUtil|Developer Utilities Tool/)
   })
   it('noindex pages have no canonical', () => {
     const head = buildHead({ title: 't', documentTitle: 't', description: 'd', path: '/missing', name: 't' }, { noindex: true })

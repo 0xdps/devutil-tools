@@ -28,7 +28,7 @@ export default function PWAUpdatePrompt() {
       className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
     >
       <RefreshCw className="size-4 shrink-0 text-primary" />
-      <span className="flex-1">A new version of DevUtil is ready.</span>
+      <span className="flex-1">A new version of LocalPlus is ready.</span>
       <Button size="sm" onClick={() => updateServiceWorker(true)}>
         Update
       </Button>

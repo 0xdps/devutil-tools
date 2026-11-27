@@ -37,7 +37,7 @@ export default function Contribution() {
       <SEO meta={pageMeta('contribute', '/contribute')} />
       <div className="mx-auto max-w-4xl space-y-12">
         <section className="space-y-4 pt-2 sm:pt-6">
-          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Help build DevUtil</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Help build LocalPlus</h1>
           <p className="max-w-2xl text-muted-foreground">
             {site.fullName} is free and open source. Bug reports, tool ideas and pull requests are all welcome. Here’s how to get
             started.

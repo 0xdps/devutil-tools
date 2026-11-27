@@ -86,10 +86,10 @@ function hostOf(url: string) {
 
 function MetaTab() {
   const [m, setM] = useState<MetaInput>({
-    title: 'DevUtil: private developer tools in your browser',
+    title: 'LocalPlus: private developer tools in your browser',
     description: 'Encode, convert, format, hash and decode without uploading anything. Free and open source.',
-    canonical: 'https://devutil.codes/',
-    siteName: 'DevUtil',
+    canonical: 'https://localplus.app/',
+    siteName: 'LocalPlus',
     image: '',
     imageAlt: '',
     type: 'website',
@@ -351,17 +351,17 @@ function SitemapTab() {
 function SchemaTab() {
   const [type, setType] = useState<SchemaType>('Organization')
   const [s, setS] = useState<SchemaInput>({
-    name: 'DevUtil',
-    url: 'https://devutil.codes',
-    logo: 'https://devutil.codes/icon-512x512.png',
+    name: 'LocalPlus',
+    url: 'https://localplus.app',
+    logo: 'https://localplus.app/icon-512x512.png',
     description: 'Private developer utilities that run in your browser.',
     sameAs: ['https://github.com/0xdps/devutil-tools'],
     headline: '',
     author: '',
     datePublished: '',
     image: '',
-    breadcrumbs: ['Home | https://devutil.codes/', 'Tools | https://devutil.codes/tools'],
-    searchUrl: 'https://devutil.codes/?q={search_term_string}',
+    breadcrumbs: ['Home | https://localplus.app/', 'JWT Decoder | https://localplus.app/jwt-decoder'],
+    searchUrl: 'https://localplus.app/?q={search_term_string}',
   })
   const set = <K extends keyof SchemaInput>(k: K, v: SchemaInput[K]) => setS((prev) => ({ ...prev, [k]: v }))
   const input = (key: 'name' | 'url' | 'logo' | 'description' | 'headline' | 'author' | 'image' | 'searchUrl', label: string, typeAttr = 'text') => (

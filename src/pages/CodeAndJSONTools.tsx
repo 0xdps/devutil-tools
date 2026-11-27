@@ -20,7 +20,7 @@ import { CODE_LANGUAGES, formatCode, minifyCode, parseJsonStrict, queryJsonPath,
 const TABS = ['format', 'jsonpath'] as const
 
 const EXAMPLES: Record<CodeLanguage, string> = {
-  json: '{"name":"devutil","version":"2.0.0","scripts":{"dev":"vite","build":"tsc && vite build"},"private":true,"keywords":["tools","privacy"]}',
+  json: '{"name":"localplus","version":"2.0.0","scripts":{"dev":"vite","build":"tsc && vite build"},"private":true,"keywords":["tools","privacy"]}',
   javascript: "const greet=(name)=>{if(!name){return 'Hello, stranger'}return `Hello, ${name}!`};export default greet",
   typescript: 'interface User{id:number;name:string;roles?:string[]}export function isAdmin(u:User):boolean{return u.roles?.includes("admin")??false}',
   css: '.card{display:flex;gap:1rem;padding:16px}.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}@media (max-width:600px){.card{flex-direction:column}}',
@@ -28,7 +28,7 @@ const EXAMPLES: Record<CodeLanguage, string> = {
   less: '@gap:1rem;.card{display:flex;gap:@gap;&:hover{opacity:.9}}',
   html: '<!doctype html><html><head><title>Demo</title><style>body{margin:0}</style></head><body><main><h1>Hello</h1><p>Formatted with <b>Prettier</b>.</p></main></body></html>',
   markdown: '# Title\nSome *text* here.\n* one\n* two\n\n|a|b|\n|-|-|\n|1|2|',
-  yaml: 'name:   devutil\nversion: 2\nscripts: {dev: vite, build: "tsc && vite build"}\nkeywords: [tools,   privacy]',
+  yaml: 'name:   localplus\nversion: 2\nscripts: {dev: vite, build: "tsc && vite build"}\nkeywords: [tools,   privacy]',
   graphql: 'query GetUser($id:ID!){user(id:$id){id name posts(first:5){edges{node{title}}}}}',
 }
 

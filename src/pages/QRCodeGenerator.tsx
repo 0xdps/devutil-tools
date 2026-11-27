@@ -50,7 +50,7 @@ export default function QRCodeGenerator() {
   const [tab, setTab] = useTabParam(TABS)
 
   // Content
-  const [text, setText] = useState('https://devutil.codes')
+  const [text, setText] = useState('https://localplus.app')
   const [wifi, setWifi] = useState({ ssid: '', password: '', security: 'WPA' as WifiSecurity, hidden: false })
   const [email, setEmail] = useState({ to: '', subject: '', body: '' })
   const [phone, setPhone] = useState({ number: '', sms: '', asSms: false })

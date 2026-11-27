@@ -295,7 +295,8 @@ export interface SeoText {
   description: string
 }
 
-const BRAND = ' | DevUtil'
+export const SITE_NAME = 'LocalPlus'
+const BRAND = ` | ${SITE_NAME}`
 
 const TOOL_SEO: Record<string, SeoText & { tabs?: Record<string, SeoText> }> = {
   'data-transform': {
@@ -458,17 +459,17 @@ const TOOL_SEO: Record<string, SeoText & { tabs?: Record<string, SeoText> }> = {
 
 export const PAGE_SEO: Record<'home' | 'contribute' | 'notFound', SeoText> = {
   home: {
-    title: 'DevUtil: Free, Private Developer Tools',
+    title: 'LocalPlus: Free, Private Developer Tools',
     description: 'Encode, decode, format, convert, hash and test in one place. Free developer tools that run in your browser, so nothing you paste is uploaded.',
   },
   contribute: {
-    title: 'Contribute to DevUtil (Open Source)',
-    description: 'Report bugs, request tools or open a pull request. How to run DevUtil locally and add a new tool, step by step.',
+    title: 'Contribute & Add a Tool (Open Source)',
+    description: 'Report bugs, request tools or open a pull request. How to run LocalPlus locally and add a new tool, step by step.',
   },
-  notFound: { title: 'Page not found', description: 'This page doesn’t exist. Search DevUtil’s free, private developer tools instead.' },
+  notFound: { title: 'Page not found', description: 'This page doesn’t exist. Search LocalPlus’s free, private developer tools instead.' },
 }
 
-export const SITE_URL = 'https://devutil.codes'
+export const SITE_URL = 'https://localplus.app'
 
 /** URL of a tool, optionally at a tab (the default tab has no suffix). */
 export function toolPath(tool: CatalogTool, tab?: string): string {

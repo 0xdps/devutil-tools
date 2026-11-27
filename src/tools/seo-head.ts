@@ -3,7 +3,7 @@
  * runtime and by the build plugin that writes one HTML file per route, so
  * both always agree. Pure (no React, no DOM).
  */
-import { SITE_URL, type RouteMeta } from './catalog'
+import { SITE_NAME, SITE_URL, type RouteMeta } from './catalog'
 
 export interface HeadData {
   title: string
@@ -13,21 +13,28 @@ export interface HeadData {
 }
 
 const OG_IMAGE = `${SITE_URL}/og-image.png`
+const OG_IMAGE_ALT = `${SITE_NAME}: free, private developer tools that run in your browser`
+const REPO_URL = 'https://github.com/0xdps/devutil-tools'
 
 export function buildHead(route: RouteMeta, { noindex = false }: { noindex?: boolean } = {}): HeadData {
   const url = `${SITE_URL}${route.path === '/' ? '/' : route.path}`
   const meta: HeadData['meta'] = [
     { name: 'description', content: route.description },
     { property: 'og:type', content: 'website' },
-    { property: 'og:site_name', content: 'DevUtil' },
+    { property: 'og:site_name', content: SITE_NAME },
+    { property: 'og:locale', content: 'en_US' },
     { property: 'og:title', content: route.title },
     { property: 'og:description', content: route.description },
     { property: 'og:url', content: url },
     { property: 'og:image', content: OG_IMAGE },
+    { property: 'og:image:width', content: '1200' },
+    { property: 'og:image:height', content: '630' },
+    { property: 'og:image:alt', content: OG_IMAGE_ALT },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: route.title },
     { name: 'twitter:description', content: route.description },
     { name: 'twitter:image', content: OG_IMAGE },
+    { name: 'twitter:image:alt', content: OG_IMAGE_ALT },
   ]
   if (noindex) meta.push({ name: 'robots', content: 'noindex' })
 
@@ -42,7 +49,10 @@ export function buildHead(route: RouteMeta, { noindex = false }: { noindex?: boo
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Any (runs in the browser)',
       isAccessibleForFree: true,
+      inLanguage: 'en',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      isPartOf: { '@id': `${SITE_URL}/#website` },
     })
     jsonLd.push({
       '@context': 'https://schema.org',
@@ -53,7 +63,18 @@ export function buildHead(route: RouteMeta, { noindex = false }: { noindex?: boo
       ],
     })
   } else if (route.path === '/') {
-    jsonLd.push({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'DevUtil', url, description: route.description })
+    jsonLd.push(
+      { '@context': 'https://schema.org', '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url, description: route.description, inLanguage: 'en', publisher: { '@id': `${SITE_URL}/#organization` } },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: SITE_NAME,
+        url,
+        logo: `${SITE_URL}/icon-512x512.png`,
+        sameAs: [REPO_URL],
+      },
+    )
   }
 
   return { title: route.documentTitle, meta, links: noindex ? [] : [{ rel: 'canonical', href: url }], jsonLd }

@@ -1,6 +1,6 @@
 # Plan: Shared core package, web app, and CLI
 
-This document describes how to extract reusable tool logic into an **npm package** consumed by the **Developer Utilities Tool** web app and, later, a **command-line interface**—without duplicating behavior or drifting implementations.
+This document describes how to extract reusable tool logic into an **npm package** consumed by the **LocalPlus** web app and, later, a **command-line interface**—without duplicating behavior or drifting implementations.
 
 > **Status (Nov 2026):** the extraction itself is done *inside the app*. Waves A–C below are complete: all tool logic now lives in `src/lib/` as pure functions with unit tests (`encoding`, `jwt`, `hash`, `password`, `random`, `timestamp`, `cron`, `url`, `transform`, `code-format`, `text`, `color`, `qr-payload`, `seo`, `regex`, `timezone`, …), and the pages only render results. What remains is the packaging step: move `src/lib/` into `packages/core`, then add `packages/cli`.
 >

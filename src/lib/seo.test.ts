@@ -23,9 +23,9 @@ describe('metaTags', () => {
   })
   it('uses summary_large_image only with an image and adds @ to the handle', () => {
     expect(metaTags({ ...baseMeta, title: 'x' })).toContain('content="summary"')
-    const withImage = metaTags({ ...baseMeta, title: 'x', image: 'https://x.dev/og.png', twitterSite: 'devutil' })
+    const withImage = metaTags({ ...baseMeta, title: 'x', image: 'https://x.dev/og.png', twitterSite: 'localplus' })
     expect(withImage).toContain('content="summary_large_image"')
-    expect(withImage).toContain('<meta name="twitter:site" content="@devutil">')
+    expect(withImage).toContain('<meta name="twitter:site" content="@localplus">')
   })
   it('adds canonical and noindex', () => {
     const out = metaTags({ ...baseMeta, canonical: 'https://x.dev/a?b=1&c=2', noindex: true })
@@ -67,8 +67,8 @@ describe('sitemapXml', () => {
 
 describe('jsonLd', () => {
   const s: SchemaInput = {
-    name: 'DevUtil',
-    url: 'https://devutil.codes',
+    name: 'LocalPlus',
+    url: 'https://localplus.app',
     logo: '',
     description: '',
     sameAs: ['https://github.com/0xdps', ''],
@@ -77,7 +77,7 @@ describe('jsonLd', () => {
     datePublished: '',
     image: '',
     breadcrumbs: ['Home | https://x.dev/', 'Tools | https://x.dev/tools', ''],
-    searchUrl: 'https://devutil.codes/?q={search_term_string}',
+    searchUrl: 'https://localplus.app/?q={search_term_string}',
   }
   it('drops empty fields', () => {
     const out = jsonLd('Organization', s)
@@ -85,7 +85,7 @@ describe('jsonLd', () => {
     expect(out).not.toContain('"logo"')
   })
   it('builds a WebSite search action and breadcrumbs', () => {
-    expect(jsonLd('WebSite', s)).toContain('"urlTemplate": "https://devutil.codes/?q={search_term_string}"')
+    expect(jsonLd('WebSite', s)).toContain('"urlTemplate": "https://localplus.app/?q={search_term_string}"')
     const crumbs = JSON.parse(jsonLd('BreadcrumbList', s).replace(/^<script[^>]*>|<\/script>$/g, ''))
     expect(crumbs.itemListElement).toEqual([
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://x.dev/' },

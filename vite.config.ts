@@ -13,9 +13,10 @@ export default defineConfig({
         registerType: 'prompt',
         includeAssets: ['favicon.ico', 'logo.svg', 'robots.txt'],
         manifest: {
-            name: 'Developer Utilities Tool',
-            short_name: 'DevUtil',
-            description: 'A comprehensive collection of free developer utilities for everyday tasks.',
+            id: '/',
+            name: 'LocalPlus: Private Developer Tools',
+            short_name: 'LocalPlus',
+            description: 'Free developer tools that run in your browser: encode, convert, format, hash and test without uploading anything.',
             theme_color: '#1a1b26',
             background_color: '#0d0d12',
             display: 'standalone',

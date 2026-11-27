@@ -35,7 +35,7 @@ const EXT_LANGUAGE: Record<string, EditorLanguage> = {
 }
 
 const EXAMPLE_A = `{
-  "name": "devutil",
+  "name": "localplus",
   "version": "1.4.0",
   "private": true,
   "scripts": {
@@ -48,7 +48,7 @@ const EXAMPLE_A = `{
   }
 }`
 const EXAMPLE_B = `{
-  "name": "devutil",
+  "name": "localplus",
   "version": "2.0.0",
   "private": true,
   "type": "module",

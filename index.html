@@ -15,7 +15,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="DevUtil" />
+    <meta name="apple-mobile-web-app-title" content="LocalPlus" />
     <link rel="mask-icon" href="/logo.svg" color="#1a1b26" />
 
     <meta name="author" content="Devendra Pratap Singh" />
@@ -23,6 +23,16 @@
          injected at build time from src/tools/catalog.ts (see vite-plugins/static-routes.ts). -->
     <!--seo:start--><!--seo:end-->
 
+    <script>
+      // Moved from devutil.codes: forward old bookmarks and share links (keeps path, query and #fragment).
+      // A server-side 301 on the old domain is preferred; this is the fallback.
+      (function () {
+        var h = location.hostname;
+        if (h === 'devutil.codes' || h === 'www.devutil.codes') {
+          location.replace('https://localplus.app' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
     <script>
       // Apply the saved theme before first paint (mirrors ThemeProvider).
       (function () {

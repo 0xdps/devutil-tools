@@ -42,7 +42,7 @@ function noscript(route: RouteMeta): string {
       <main style="max-width:44rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,sans-serif;line-height:1.6">
         <h1>${esc(route.title)}</h1>
         <p>${esc(route.description)}</p>
-        <p>DevUtil’s tools run entirely in your browser and need JavaScript enabled.</p>
+        <p>LocalPlus tools run entirely in your browser and need JavaScript enabled.</p>
         <h2>${tool ? "Related" : "Tools"}</h2>
         <ul>${related.map((r) => `<li><a href="${esc(r.path)}">${esc(r.title)}</a></li>`).join("")}</ul>
       </main>
@@ -85,7 +85,7 @@ function redirects(): string {
 
 export function staticRoutes(): Plugin {
   return {
-    name: "devutil:static-routes",
+    name: "localplus:static-routes",
     transformIndexHtml: {
       order: "post",
       handler(html) {

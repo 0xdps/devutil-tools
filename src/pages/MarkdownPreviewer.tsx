@@ -13,7 +13,7 @@ import { textStats } from '@/lib/text'
 
 const EXAMPLE = `# Release notes
 
-DevUtil **2.0** is a ground-up redesign. Everything still runs *locally*.
+LocalPlus **2.0** is a ground-up redesign. Everything still runs *locally*.
 
 ## What's new
 
