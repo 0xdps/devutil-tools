@@ -263,14 +263,14 @@ export const tools: ToolDefinition[] = [
   {
     id: 'seo-generator',
     name: 'SEO Generator',
-    description: 'Meta tags, robots.txt, sitemap, canonical, schema.org',
+    description: 'Meta & social tags with previews, robots.txt, sitemap, JSON-LD',
     path: '/seo-generator',
     category: 'web',
     icon: Tags,
     keywords: ['seo', 'meta tags', 'open graph', 'twitter card', 'robots.txt', 'sitemap', 'schema'],
     features: [
       { id: 'meta', name: 'Meta & Open Graph tags' },
-      { id: 'robots', name: 'robots.txt' },
+      { id: 'robots', name: 'robots.txt generator', keywords: ['block ai crawlers', 'gptbot'] },
       { id: 'sitemap', name: 'sitemap.xml' },
       { id: 'canonical', name: 'Canonical URL' },
       { id: 'schema', name: 'Schema.org JSON-LD' },
