@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, ShieldCheck, Square } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { ConsolePanel, type ConsoleEntry } from '@/components/tool/ConsolePanel'
@@ -40,6 +41,10 @@ export default function JavaScriptRunner() {
   const [timeoutSec, setTimeoutSec] = useState('5')
   const workerRef = useRef<Worker | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useShareState({ code }, (s) => setCode(String(s.code ?? '')), {
+    note: 'The link contains your code (after #). It is never sent to our server, and it never runs until someone presses Run.',
+  })
 
   const push = useCallback((level: ConsoleEntry['level'], text: string) => setEntries((prev) => [...prev, { id: nextId++, level, text }].slice(-2000)), [])
 
@@ -92,12 +97,14 @@ export default function JavaScriptRunner() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        // Capture phase + stopPropagation: CodeMirror would otherwise also insert a blank line.
         e.preventDefault()
+        e.stopPropagation()
         run()
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [run])
 
   useEffect(() => () => workerRef.current?.terminate(), [])

@@ -6,6 +6,7 @@ import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { CommandPaletteProvider } from './CommandPalette'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
+import { ToolActionsProvider } from '@/components/tool/ToolActionsProvider'
 import { usePageView } from '@/hooks/usePageView'
 import { recordRecent } from '@/hooks/use-tool-prefs'
 import { getToolByPath } from '@/tools/registry'
@@ -48,6 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   usePageView()
 
+  const toolId = getToolByPath(pathname)?.id
+
   useEffect(() => {
     const tool = getToolByPath(pathname)
     if (tool && !tool.hidden) recordRecent(tool.id)
@@ -67,7 +70,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SidebarInset className="min-w-0">
             <TopBar />
             <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:py-8">
-              <RouteErrorBoundary resetKey={pathname}>{children}</RouteErrorBoundary>
+              <RouteErrorBoundary resetKey={pathname}>
+                {/* One per tool: kept across that tool's tabs, reset between tools */}
+                <ToolActionsProvider key={toolId ?? pathname} toolId={toolId ?? 'page'}>
+                  {children}
+                </ToolActionsProvider>
+              </RouteErrorBoundary>
             </main>
             <SiteFooter />
           </SidebarInset>

@@ -3,6 +3,7 @@ import { createTwoFilesPatch, diffLines } from 'diff'
 import { ArrowDown, ArrowLeftRight, ArrowUp, Eraser, FileUp, FlaskConical } from 'lucide-react'
 import { toast } from 'sonner'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { DiffEditor, type DiffEditorHandle } from '@/components/tool/DiffEditor'
 import { DownloadButton } from '@/components/tool/DownloadButton'
 import { StatusPill } from '@/components/tool/StatusPill'
@@ -110,6 +111,14 @@ export default function CodeDiff() {
   }, [a, b])
 
   const patch = useMemo(() => (stats.added || stats.removed ? createTwoFilesPatch(names.a, names.b, a, b) : ''), [a, b, names, stats])
+
+  useToolOutput(patch)
+  useShareState({ original, modified, language, names }, (s) => {
+    setOriginal(String(s.original ?? ''))
+    setModified(String(s.modified ?? ''))
+    if (LANGUAGES.some((l) => l.value === s.language)) setLanguage(s.language)
+    if (s.names && typeof s.names.a === 'string' && typeof s.names.b === 'string') setNames(s.names)
+  })
 
   const load = (side: 'a' | 'b') => (text: string, name: string) => {
     if (side === 'a') setOriginal(text)

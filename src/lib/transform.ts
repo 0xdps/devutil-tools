@@ -127,21 +127,5 @@ export function convertData(from: DataFormat, to: DataFormat, text: string, inde
   return stringifyData(to, parseData(from, text), indent)
 }
 
-/** Best-effort format guess for pasted text. */
-export function detectFormat(text: string): DataFormat | null {
-  const t = text.trim()
-  if (!t) return null
-  if (/^[[{]/.test(t)) {
-    try {
-      JSON.parse(t)
-      return 'json'
-    } catch {
-      /* not JSON */
-    }
-  }
-  if (t.startsWith('<')) return 'xml'
-  if (/^\s*\[[\w.-]+\]\s*$/m.test(t) || /^[\w.-]+\s*=\s*.+$/m.test(t.split('\n')[0])) return 'toml'
-  if (/^(---|[\w"'-]+\s*:\s|- )/m.test(t)) return 'yaml'
-  if (t.split('\n')[0].includes(',')) return 'csv'
-  return null
-}
+// Lives in its own module so smart paste can use it without pulling in the parsers.
+export { detectFormat } from './detect-format'

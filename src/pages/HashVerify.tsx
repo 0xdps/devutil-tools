@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, ShieldAlert, Sparkles } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { FileDrop } from '@/components/tool/FileDrop'
@@ -148,6 +149,9 @@ function HashTab() {
     }
   }, [source, deferredText, file])
 
+  useIncomingInput<{ expected: string }>((v) => typeof v.expected === 'string' && setExpected(v.expected))
+  // Copy-output gives the SHA-256; no share links (inputs are often secrets).
+  useToolOutput(digests['SHA-256'] ? formatDigest(digests['SHA-256'], format) : '')
   const expectedBytes = useMemo(() => parseExpectedDigest(expected), [expected])
   const match = expectedBytes
     ? (Object.keys(digests) as HashAlgorithm[]).find((alg) => bytesEqual(digests[alg]!, expectedBytes))
@@ -387,7 +391,7 @@ function PasswordTab() {
           </>
         )}
         <Button variant="outline" size="sm" asChild>
-          <Link to="/generators?tab=password">
+          <Link to="/generators/password">
             <Sparkles /> Generate a strong password
           </Link>
         </Button>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useIncomingInput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { StatusPill, type StatusTone } from '@/components/tool/StatusPill'
@@ -140,6 +141,7 @@ const UUID_VERSIONS: { value: UuidVersion; label: string; hint: string }[] = [
 
 function UuidInspector() {
   const [value, setValue] = useState('')
+  useIncomingInput<{ inspect: string }>((v) => typeof v.inspect === 'string' && setValue(v.inspect))
   const info = useMemo(() => {
     if (!value.trim()) return null
     try {

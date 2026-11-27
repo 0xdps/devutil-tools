@@ -30,12 +30,15 @@ import {
 import {
   categories,
   getToolById,
+  toolHref,
   visibleTools,
   type ToolDefinition,
 } from "@/tools/registry";
 import { useFavorites, useRecents } from "@/hooks/use-tool-prefs";
 import { site } from "@/config/site";
 import { GithubIcon } from "@/components/icons";
+import { detectContent } from "@/lib/detect";
+import { useOpenSuggestion } from "@/hooks/use-open-suggestion";
 import { CommandPaletteContext } from "./command-palette-context";
 
 function isTypingTarget(target: EventTarget | null) {
@@ -137,6 +140,12 @@ function CommandPalette({
   }, [favorites, recents]);
 
   const searching = search.trim().length > 0;
+  const openSuggestion = useOpenSuggestion();
+  // Smart paste: pasted data (a JWT, JSON, timestamp…) suggests tools.
+  const suggestions = useMemo(
+    () => (search.trim().length >= 6 ? detectContent(search) : []),
+    [search],
+  );
 
   return (
     <CommandDialog
@@ -146,132 +155,168 @@ function CommandPalette({
       description="Jump to a tool or run a command"
       className="sm:max-w-xl"
     >
-      <Command>
+      {/* Pasted data: show only suggestions, unfiltered and unsorted. */}
+      <Command shouldFilter={suggestions.length === 0}>
         <CommandInput
           placeholder="Search tools, e.g. “base64”, “uuid”, “cron”…"
           value={search}
           onValueChange={setSearch}
         />
         <CommandList className="max-h-[min(60vh,420px)]">
-          <CommandEmpty>No tools match “{search}”.</CommandEmpty>
+          {suggestions.length === 0 && (
+            <CommandEmpty>No tools match “{search}”.</CommandEmpty>
+          )}
 
-          {!searching && pinned.length > 0 && (
-            <CommandGroup heading="Favorites & recent">
-              {pinned.map((tool) => (
-                <ToolItem
-                  key={tool.id}
-                  tool={tool}
-                  prefix="pinned"
-                  onSelect={() => go(tool.path)}
-                />
-              ))}
+          {suggestions.length > 0 && (
+            <CommandGroup heading="Open with">
+              {suggestions.map((sug, i) => {
+                const tool = getToolById(sug.toolId);
+                if (!tool) return null;
+                const Icon = tool.icon;
+                return (
+                  <CommandItem
+                    key={`${sug.toolId}:${sug.tab ?? ""}:${i}`}
+                    value={`suggest:${i}`}
+                    onSelect={() => run(() => openSuggestion(sug))}
+                  >
+                    <Icon />
+                    <span className="font-medium">{sug.action}</span>
+                    <span className="truncate text-muted-foreground">
+                      {sug.kind} · {tool.name}
+                    </span>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           )}
 
-          {categories.map((category) => {
-            const list = visibleTools.filter((t) => t.category === category.id);
-            if (list.length === 0) return null;
-            return (
-              <CommandGroup key={category.id} heading={category.label}>
-                {list.map((tool) => (
-                  <ToolItem
-                    key={tool.id}
-                    tool={tool}
-                    prefix="tool"
-                    onSelect={() => go(tool.path)}
-                  />
-                ))}
-              </CommandGroup>
-            );
-          })}
-
-          {searching && (
-            <CommandGroup heading="Inside tools">
-              {visibleTools.flatMap((tool) =>
-                (tool.features ?? []).map((feature) => {
-                  const Icon = tool.icon;
-                  return (
-                    <CommandItem
-                      key={`${tool.id}:${feature.id}`}
-                      value={`feature:${tool.id}:${feature.id}`}
-                      keywords={[
-                        feature.name,
-                        ...(feature.keywords ?? []),
-                        tool.name,
-                      ]}
+          {suggestions.length === 0 && (
+            <>
+              {!searching && pinned.length > 0 && (
+                <CommandGroup heading="Favorites & recent">
+                  {pinned.map((tool) => (
+                    <ToolItem
+                      key={tool.id}
+                      tool={tool}
+                      prefix="pinned"
                       onSelect={() => go(tool.path)}
-                    >
-                      <Icon />
-                      <span>{feature.name}</span>
-                      <span className="text-muted-foreground">
-                        in {tool.name}
-                      </span>
-                    </CommandItem>
-                  );
-                }),
+                    />
+                  ))}
+                </CommandGroup>
               )}
-            </CommandGroup>
-          )}
 
-          <CommandSeparator />
-          <CommandGroup heading="General">
-            <CommandItem
-              value="action:home"
-              keywords={["home", "all tools"]}
-              onSelect={() => go("/")}
-            >
-              <Home /> All tools
-            </CommandItem>
-            <CommandItem
-              value="action:theme-light"
-              keywords={["theme", "light mode"]}
-              onSelect={() => run(() => setTheme("light"))}
-            >
-              <Sun /> Light theme
-            </CommandItem>
-            <CommandItem
-              value="action:theme-dark"
-              keywords={["theme", "dark mode"]}
-              onSelect={() => run(() => setTheme("dark"))}
-            >
-              <Moon /> Dark theme
-            </CommandItem>
-            <CommandItem
-              value="action:theme-system"
-              keywords={["theme", "system", "auto"]}
-              onSelect={() => run(() => setTheme("system"))}
-            >
-              <Monitor /> System theme
-            </CommandItem>
-            <CommandItem
-              value="action:privacy"
-              keywords={["privacy", "data"]}
-              onSelect={() => go("?modal=privacy")}
-            >
-              <ShieldCheck /> Privacy
-            </CommandItem>
-            <CommandItem
-              value="action:contribute"
-              keywords={["contribute", "help"]}
-              onSelect={() => go("/contribute")}
-            >
-              <BookOpen /> Contribute
-            </CommandItem>
-            <CommandItem
-              value="action:github"
-              keywords={["github", "source", "repository", "star"]}
-              onSelect={() =>
-                run(() =>
-                  window.open(site.repoUrl, "_blank", "noopener,noreferrer"),
-                )
-              }
-            >
-              <GithubIcon /> View source on GitHub
-              <CommandShortcut>
-                <Star className="size-3" />
-              </CommandShortcut>
-            </CommandItem>
-          </CommandGroup>
+              {categories.map((category) => {
+                const list = visibleTools.filter(
+                  (t) => t.category === category.id,
+                );
+                if (list.length === 0) return null;
+                return (
+                  <CommandGroup key={category.id} heading={category.label}>
+                    {list.map((tool) => (
+                      <ToolItem
+                        key={tool.id}
+                        tool={tool}
+                        prefix="tool"
+                        onSelect={() => go(tool.path)}
+                      />
+                    ))}
+                  </CommandGroup>
+                );
+              })}
+
+              {searching && (
+                <CommandGroup heading="Inside tools">
+                  {visibleTools.flatMap((tool) =>
+                    (tool.features ?? []).map((feature) => {
+                      const Icon = tool.icon;
+                      return (
+                        <CommandItem
+                          key={`${tool.id}:${feature.id}`}
+                          value={`feature:${tool.id}:${feature.id}`}
+                          keywords={[
+                            feature.name,
+                            ...(feature.keywords ?? []),
+                            tool.name,
+                          ]}
+                          onSelect={() => go(toolHref(tool, feature.tab))}
+                        >
+                          <Icon />
+                          <span>{feature.name}</span>
+                          <span className="text-muted-foreground">
+                            in {tool.name}
+                          </span>
+                        </CommandItem>
+                      );
+                    }),
+                  )}
+                </CommandGroup>
+              )}
+
+              <CommandSeparator />
+              <CommandGroup heading="General">
+                <CommandItem
+                  value="action:home"
+                  keywords={["home", "all tools"]}
+                  onSelect={() => go("/")}
+                >
+                  <Home /> All tools
+                </CommandItem>
+                <CommandItem
+                  value="action:theme-light"
+                  keywords={["theme", "light mode"]}
+                  onSelect={() => run(() => setTheme("light"))}
+                >
+                  <Sun /> Light theme
+                </CommandItem>
+                <CommandItem
+                  value="action:theme-dark"
+                  keywords={["theme", "dark mode"]}
+                  onSelect={() => run(() => setTheme("dark"))}
+                >
+                  <Moon /> Dark theme
+                </CommandItem>
+                <CommandItem
+                  value="action:theme-system"
+                  keywords={["theme", "system", "auto"]}
+                  onSelect={() => run(() => setTheme("system"))}
+                >
+                  <Monitor /> System theme
+                </CommandItem>
+                <CommandItem
+                  value="action:privacy"
+                  keywords={["privacy", "data"]}
+                  onSelect={() => go("?modal=privacy")}
+                >
+                  <ShieldCheck /> Privacy
+                </CommandItem>
+                <CommandItem
+                  value="action:contribute"
+                  keywords={["contribute", "help"]}
+                  onSelect={() => go("/contribute")}
+                >
+                  <BookOpen /> Contribute
+                </CommandItem>
+                <CommandItem
+                  value="action:github"
+                  keywords={["github", "source", "repository", "star"]}
+                  onSelect={() =>
+                    run(() =>
+                      window.open(
+                        site.repoUrl,
+                        "_blank",
+                        "noopener,noreferrer",
+                      ),
+                    )
+                  }
+                >
+                  <GithubIcon /> View source on GitHub
+                  <CommandShortcut>
+                    <Star className="size-3" />
+                  </CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </Command>
     </CommandDialog>

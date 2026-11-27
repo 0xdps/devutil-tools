@@ -6,6 +6,7 @@ import { toolsMetadata } from '@/config/seoConfig'
 import { getToolById, toolsByCategory, type ToolDefinition } from '@/tools/registry'
 import { useFavorites, useRecents } from '@/hooks/use-tool-prefs'
 import { useCommandPalette } from '@/components/layout/command-palette-context'
+import { PasteBox } from '@/components/layout/PasteBox'
 import { modKey } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
@@ -92,6 +93,8 @@ export default function Home() {
             </span>
             <Kbd>{modKey} K</Kbd>
           </button>
+
+          <PasteBox />
 
           <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
             {promises.map(({ icon: Icon, label }) => (

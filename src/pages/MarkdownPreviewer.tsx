@@ -3,6 +3,7 @@ import { marked } from 'marked'
 import { useTheme } from 'next-themes'
 import { ShieldCheck } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -42,6 +43,8 @@ export default function MarkdownPreviewer() {
   const html = useMemo(() => marked.parse(deferred, { gfm: true, async: false }) as string, [deferred])
   const doc = useMemo(() => markdownDocument(html, { dark: resolvedTheme === 'dark' }), [html, resolvedTheme])
   const stats = textStats(markdown)
+  useToolOutput(html)
+  useShareState({ markdown }, (s) => setMarkdown(String(s.markdown ?? '')))
 
   return (
     <ToolPage

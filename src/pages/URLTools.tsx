@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Eraser, FlaskConical, Link2, Plus, Trash2 } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,8 @@ export default function URLTools() {
   }
 
   const parts = parsed ? urlParts(parsed.url) : []
+  useToolOutput(parsed?.url.href ?? '')
+  useShareState({ input }, (s) => setUrlText(String(s.input ?? '')))
 
   return (
     <ToolPage

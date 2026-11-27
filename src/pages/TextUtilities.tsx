@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { CornerLeftUp, Eraser } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -142,6 +143,7 @@ export default function TextUtilities() {
   const [tab, setTab] = useTabParam(TABS)
   const [text, setText] = useState('')
   const deferred = useDeferredValue(text)
+  useShareState({ text }, (s) => setText(String(s.text ?? '')))
 
   return (
     <ToolPage

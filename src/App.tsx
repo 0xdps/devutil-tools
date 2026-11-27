@@ -1,15 +1,28 @@
 import { Suspense, lazy } from 'react'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import type { ReactElement } from 'react'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { AppShell } from '@/components/layout/AppShell'
 import { Toaster } from '@/components/ui/sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import Home from '@/pages/Home'
-import { tools } from '@/tools/registry'
+import { toolHref, tools } from '@/tools/registry'
 
 const Contribution = lazy(() => import('@/pages/Contribution'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
+
+function TabRoute({ tabs, base, element }: { tabs: readonly string[]; base: string; element: ReactElement }) {
+  const { tab } = useParams()
+  const { search } = useLocation()
+  // The first tab lives at the base path; unknown tabs go back to the tool.
+  return tab && tabs.includes(tab) && tab !== tabs[0] ? element : <Navigate to={`${base}${search}`} replace />
+}
+
+function RedirectKeepingSearch({ to }: { to: string }) {
+  const { search, hash } = useLocation()
+  return <Navigate to={`${to}${search}${hash}`} replace />
+}
 
 /** Mirrors the ToolPage header + two panels so navigation doesn't jump. */
 function PageSkeleton() {
@@ -39,12 +52,26 @@ export default function App() {
           <Suspense fallback={<PageSkeleton />}>
             <Routes>
               <Route path="/" element={<Home />} />
-              {tools.flatMap(({ id, path, aliases = [], component: Component }) =>
-                // Aliases render the tool directly for now: some pages read the
-                // path (e.g. /json-tools opens the JSON tab). Phase 3 replaces
-                // them with sub-routes + <Navigate> redirects.
-                [path, ...aliases].map((p) => <Route key={`${id}${p}`} path={p} element={<Component />} />),
-              )}
+              {tools.flatMap((tool) => {
+                const { id, path, tabs, aliases = [], component: Component } = tool
+                return [
+                  <Route key={id} path={path} element={<Component />} />,
+                  // Tab sub-routes: /generators/uuid. Unknown tabs fall back to the tool.
+                  ...(tabs
+                    ? [
+                        <Route
+                          key={`${id}/tab`}
+                          path={`${path}/:tab`}
+                          element={<TabRoute tabs={tabs} base={path} element={<Component />} />}
+                        />,
+                      ]
+                    : []),
+                  // Legacy URLs redirect (keeping the query string, e.g. ?tab=).
+                  ...aliases.map((alias) => (
+                    <Route key={`${id}${alias.path}`} path={alias.path} element={<RedirectKeepingSearch to={toolHref(tool, alias.tab)} />} />
+                  )),
+                ]
+              })}
               <Route path="/contribute" element={<Contribution />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

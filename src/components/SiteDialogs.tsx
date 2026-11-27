@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { site } from '@/config/site'
+import { Kbd, KbdGroup } from '@/components/ui/kbd'
+import { modKey } from '@/lib/platform'
 
 interface SiteDialogProps {
   open: boolean
@@ -95,6 +97,47 @@ export function SupportDialog({ open, onOpenChange }: SiteDialogProps) {
             <a href="/contribute">contribution guide</a>.
           </Section>
         </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const SHORTCUTS: { keys: string[]; action: string; where?: string }[] = [
+  { keys: [modKey, 'K'], action: 'Search tools and commands' },
+  { keys: ['/'], action: 'Search tools' },
+  { keys: [modKey, 'B'], action: 'Show or hide the sidebar' },
+  { keys: ['⌥', '⇧', 'C'], action: 'Copy the tool’s output' },
+  { keys: ['⌥', '⇧', 'S'], action: 'Copy a share link', where: 'tools with Share' },
+  { keys: [modKey, '↵'], action: 'Run', where: 'JavaScript Runner, HTML Playground' },
+  { keys: [modKey, 'F'], action: 'Find in editor', where: 'code editors' },
+  { keys: ['?'], action: 'Show this list' },
+]
+
+export function ShortcutsDialog({ open, onOpenChange }: SiteDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogDescription>Work without leaving the keyboard.</DialogDescription>
+        </DialogHeader>
+        <dl className="divide-y text-sm">
+          {SHORTCUTS.map(({ keys, action, where }) => (
+            <div key={action} className="flex items-center justify-between gap-4 py-2">
+              <dt>
+                {action}
+                {where && <span className="block text-xs text-muted-foreground">{where}</span>}
+              </dt>
+              <dd>
+                <KbdGroup>
+                  {keys.map((k) => (
+                    <Kbd key={k}>{k}</Kbd>
+                  ))}
+                </KbdGroup>
+              </dd>
+            </div>
+          ))}
+        </dl>
       </DialogContent>
     </Dialog>
   )

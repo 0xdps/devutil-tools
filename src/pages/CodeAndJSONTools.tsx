@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
 import { CircleAlert, CornerLeftUp, Eraser, FlaskConical, Loader2 } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -85,6 +85,14 @@ function FormatTab() {
   }, [deferred, language, effectiveMode, indent, sortKeys])
 
   const savedBytes = state.output && input ? input.length - state.output.length : 0
+  useToolOutput(state.output)
+  useShareState({ language, mode, indent, sortKeys, input }, (s) => {
+    if (CODE_LANGUAGES.some((l) => l.value === s.language)) setLanguage(s.language)
+    setMode(s.mode === 'minify' ? 'minify' : 'format')
+    if ([0, 2, 4].includes(Number(s.indent))) setIndent(Number(s.indent))
+    setSortKeys(s.sortKeys === true)
+    setInput(String(s.input ?? ''))
+  })
 
   return (
     <div className="space-y-4">
@@ -250,6 +258,11 @@ function JsonPathTab() {
   }, [parsed, deferredPath])
 
   const values = state.matches.map((m) => m.value)
+  useToolOutput(state.matches.length ? JSON.stringify(values, null, 2) : '')
+  useShareState({ json, path }, (s) => {
+    setJson(String(s.json ?? ''))
+    setPath(String(s.path ?? ''))
+  })
 
   return (
     <div className="space-y-4">
@@ -317,12 +330,8 @@ function JsonPathTab() {
 }
 
 export default function CodeAndJSONTools() {
-  const { pathname } = useLocation()
-  const [searchParams] = useSearchParams()
   const [tab, setTab] = useTabParam(TABS)
-  // Legacy /json-tools URLs open the JSON tab.
-  const active = pathname === '/json-tools' && !searchParams.get('tab') ? 'jsonpath' : tab
-  const meta = pathname === '/json-tools' ? toolsMetadata.jsonTools : toolsMetadata.codeFormatter
+  const meta = tab === 'jsonpath' ? toolsMetadata.jsonTools : toolsMetadata.codeFormatter
 
   return (
     <ToolPage
@@ -339,7 +348,7 @@ export default function CodeAndJSONTools() {
         </ul>
       }
     >
-      <Tabs value={active} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="format">Format & minify</TabsTrigger>
           <TabsTrigger value="jsonpath">JSONPath query</TabsTrigger>

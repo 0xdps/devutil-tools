@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from '
 import QRCode from 'qrcode'
 import { Download, QrCode, TriangleAlert } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { CodeArea } from '@/components/tool/ToolPanel'
 import { Button } from '@/components/ui/button'
@@ -83,6 +84,8 @@ export default function QRCodeGenerator() {
   }, [tab, text, wifi, email, phone, contact])
 
   const deferredPayload = useDeferredValue(payload.value)
+  useToolOutput(payload.value ?? '')
+  useIncomingInput<{ text: string }>((v) => typeof v.text === 'string' && setText(v.text))
   const colors = useMemo(() => {
     try {
       const f = parseColor(fg)

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowUpDown, Check, Pipette } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { StatusPill } from '@/components/tool/StatusPill'
@@ -98,6 +99,11 @@ export default function ColorPicker() {
   if (main.color && toHex(main.color) !== toHex(lastGood)) setLastGood(main.color)
 
   const formats = formatAll(color)
+  useToolOutput(toHex(color))
+  useShareState({ color: main.text, background: bg.text }, (s) => {
+    main.setText(String(s.color ?? ''))
+    bg.setText(String(s.background ?? ''))
+  })
   const scale = useMemo(() => generateScale(color), [color])
   const ratio = bg.color ? contrastRatio(color, bg.color) : null
   const levels = ratio ? wcagLevels(ratio) : null

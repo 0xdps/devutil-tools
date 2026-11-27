@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import cronstrue from 'cronstrue'
 import { CalendarClock, Clock, Pause, Play } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -66,6 +67,11 @@ function TimestampTab() {
   }, [input, unit])
 
   const { parsed, error } = result
+  useToolOutput(parsed ? parsed.date.toISOString() : '')
+  useShareState({ input, unit }, (s) => {
+    setInput(String(s.input ?? ''))
+    if (['auto', 's', 'ms', 'us', 'ns'].includes(String(s.unit))) setUnit(s.unit)
+  })
   const hint = parsed
     ? parsed.source === 'date'
       ? 'Read as a date string'
@@ -154,6 +160,7 @@ const runFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', year: 'num
 function CronTab() {
   const [expr, setExpr] = useState('0 9 * * 1-5')
 
+  useShareState({ expr }, (s) => setExpr(String(s.expr ?? '')))
   const result = useMemo(() => {
     try {
       const cron = parseCron(expr)
@@ -168,6 +175,7 @@ function CronTab() {
       return { error: e instanceof Error ? e.message : String(e) }
     }
   }, [expr])
+  useToolOutput(result.runs ? result.runs.map((r) => r.toISOString()).join('\n') : '')
 
   return (
     <div className="space-y-4">

@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Play, RotateCcw, ShieldCheck } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { ConsolePanel, type ConsoleEntry } from '@/components/tool/ConsolePanel'
 import { DownloadButton } from '@/components/tool/DownloadButton'
@@ -83,13 +84,26 @@ export default function HTMLPlayground() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        // Capture phase + stopPropagation: CodeMirror would otherwise also insert a blank line.
         e.preventDefault()
+        e.stopPropagation()
         run()
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [run])
+
+  useToolOutput(standaloneDocument(files))
+  useShareState(
+    { html: files.html, css: files.css, js: files.js },
+    (s, source) => {
+      // Don't execute someone else's code automatically; the user presses Run.
+      if (source === 'share') setAutoRun(false)
+      setFiles({ html: String(s.html ?? ''), css: String(s.css ?? ''), js: String(s.js ?? '') })
+    },
+    { note: 'The link contains your HTML, CSS and JavaScript (after #). It is never sent to our server.' },
+  )
 
   const srcDoc = useMemo(() => playgroundDocument({ ...snapshot, token }), [snapshot, token])
 

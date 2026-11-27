@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowLeftRight, CircleAlert, Eraser } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,16 @@ export default function Encoding() {
       return { output: '', error: e instanceof Error ? e.message : String(e) }
     }
   }, [scheme, mode, deferredInput])
+
+  useToolOutput(result.output)
+  useShareState(
+    { scheme, mode, input },
+    (s) => {
+      if (schemes.some((x) => x.value === s.scheme)) setScheme(s.scheme)
+      setMode(s.mode === 'decode' ? 'decode' : 'encode')
+      setInput(String(s.input ?? ''))
+    },
+  )
 
   const swap = () => {
     if (result.output) setInput(result.output)

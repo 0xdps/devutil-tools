@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { BookOpen, ChevronDown, CircleAlert, Hourglass } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor, type EditorMark } from '@/components/tool/CodeEditor'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -99,6 +100,14 @@ export default function RegexTester() {
     })
     return out
   }, [result])
+
+  useToolOutput(tab === 'replace' ? (result?.replaced ?? '') : (result?.matches.map((m) => m.value).join('\n') ?? ''))
+  useShareState({ pattern, flags, text, replacement }, (s) => {
+    setPattern(String(s.pattern ?? ''))
+    setFlags(String(s.flags ?? '').replace(/[^gimsuy]/g, ''))
+    setText(String(s.text ?? ''))
+    setReplacement(String(s.replacement ?? ''))
+  })
 
   const toggleFlag = (flag: string, on: boolean) =>
     setFlags((f) => (on ? [...new Set([...f, flag])].sort((a, b) => 'gimsuy'.indexOf(a) - 'gimsuy'.indexOf(b)).join('') : f.replace(flag, '')))

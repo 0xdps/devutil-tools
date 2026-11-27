@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Eraser, FlaskConical, KeyRound, Lock } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
 import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { JsonView } from '@/components/tool/JsonView'
@@ -190,6 +191,9 @@ export default function JWTDecoder() {
 
   const { jwt, error } = result
   const isExample = token.trim() === EXAMPLE_TOKEN
+  useIncomingInput<{ token: string }>((v) => typeof v.token === 'string' && setToken(v.token))
+  // No share links here on purpose: a JWT is a credential.
+  useToolOutput(jwt ? JSON.stringify(jwt.payload, null, 2) : '')
 
   return (
     <ToolPage

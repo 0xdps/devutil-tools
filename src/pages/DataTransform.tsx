@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { ArrowLeftRight, CircleAlert, Eraser, FlaskConical, TriangleAlert, Wand2 } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { ToolPanel } from '@/components/tool/ToolPanel'
 import { CodeEditor } from '@/components/tool/CodeEditor'
 import { CopyButton } from '@/components/tool/CopyButton'
@@ -71,6 +72,14 @@ export default function DataTransform() {
   }, [deferred, from, to, indent])
 
   const detected = useMemo(() => detectFormat(deferred), [deferred])
+  useToolOutput(result.output)
+  useShareState({ from, to, indent, input }, (s) => {
+    const ok = (f: unknown): f is DataFormat => DATA_FORMATS.some((d) => d.value === f)
+    if (ok(s.from)) setFrom(s.from)
+    if (ok(s.to)) setTo(s.to)
+    if (s.indent === 2 || s.indent === 4) setIndent(s.indent)
+    setInput(String(s.input ?? ''))
+  })
   const suggestion = result.error && detected && detected !== from ? detected : null
 
   const swap = () => {

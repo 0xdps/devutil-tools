@@ -41,6 +41,8 @@ export interface ToolFeature {
   id: string
   name: string
   keywords?: string[]
+  /** Tab that implements this feature; the palette deep-links to it. */
+  tab?: string
 }
 
 export type ToolStatus = 'stable' | 'beta'
@@ -51,8 +53,11 @@ export interface ToolDefinition {
   /** One line, shown in nav tooltips, cards and the palette. */
   description: string
   path: string
-  /** Extra paths that render the same tool (legacy URLs). */
-  aliases?: string[]
+  /** Legacy URLs that redirect here (optionally to a specific tab). */
+  aliases?: { path: string; tab?: string }[]
+  /** Tab ids, in order; the first is the default. Each gets a sub-route
+   *  (`/generators/uuid`). Must match the page's TABS constant. */
+  tabs?: readonly string[]
   category: CategoryId
   icon: LucideIcon
   keywords: string[]
@@ -128,16 +133,17 @@ export const tools: ToolDefinition[] = [
     name: 'Code & JSON',
     description: 'Format code with Prettier, minify, query JSON with JSONPath',
     path: '/code-formatter',
-    aliases: ['/json-tools', '/code-json-tools'],
+    aliases: [{ path: '/json-tools', tab: 'jsonpath' }, { path: '/code-json-tools' }],
     category: 'code',
     icon: Braces,
     keywords: ['format', 'beautify', 'minify', 'prettify', 'prettier', 'json', 'html', 'css', 'scss', 'javascript', 'typescript', 'yaml', 'markdown', 'graphql', 'jsonpath', 'json validator'],
     features: [
-      { id: 'formatter', name: 'Code formatter', keywords: ['beautify', 'prettify'] },
-      { id: 'minify', name: 'Minifier' },
-      { id: 'jsonpath', name: 'JSONPath query', keywords: ['json query', 'filter'] },
-      { id: 'json-validate', name: 'JSON validator', keywords: ['lint', 'syntax error'] },
+      { id: 'formatter', name: 'Code formatter', keywords: ['beautify', 'prettify'], tab: 'format' },
+      { id: 'minify', name: 'Minifier', tab: 'format' },
+      { id: 'jsonpath', name: 'JSONPath query', keywords: ['json query', 'filter'], tab: 'jsonpath' },
+      { id: 'json-validate', name: 'JSON validator', keywords: ['lint', 'syntax error'], tab: 'format' },
     ],
+    tabs: ['format', 'jsonpath'],
     component: lazy(() => import('@/pages/CodeAndJSONTools')),
   },
   {
@@ -149,10 +155,11 @@ export const tools: ToolDefinition[] = [
     icon: Type,
     keywords: ['case', 'camelcase', 'snake_case', 'word count', 'character count', 'sort lines', 'trim'],
     features: [
-      { id: 'case', name: 'Case converter', keywords: ['camel', 'snake', 'kebab', 'pascal'] },
-      { id: 'counter', name: 'Word & character counter' },
-      { id: 'cleaner', name: 'Text cleaner & line sorter' },
+      { id: 'case', name: 'Case converter', keywords: ['camel', 'snake', 'kebab', 'pascal'], tab: 'case' },
+      { id: 'counter', name: 'Word & character counter', tab: 'stats' },
+      { id: 'cleaner', name: 'Text cleaner & line sorter', tab: 'lines' },
     ],
+    tabs: ['case', 'stats', 'lines'],
     component: lazy(() => import('@/pages/TextUtilities')),
   },
   {
@@ -170,15 +177,16 @@ export const tools: ToolDefinition[] = [
     name: 'Regex Tester',
     description: 'Test, explain and replace with regular expressions',
     path: '/regex-tester',
-    aliases: ['/regex-playground'],
+    aliases: [{ path: '/regex-playground' }],
     category: 'code',
     icon: Regex,
     keywords: ['regex', 'regexp', 'regular expression', 'pattern', 'match', 'replace', 'playground'],
     features: [
-      { id: 'replace', name: 'Regex find & replace', keywords: ['substitute', '$1'] },
+      { id: 'replace', name: 'Regex find & replace', keywords: ['substitute', '$1'], tab: 'replace' },
       { id: 'explain', name: 'Regex explainer', keywords: ['what does this regex mean'] },
       { id: 'library', name: 'Common regex patterns', keywords: ['email regex', 'url regex', 'ip regex'] },
     ],
+    tabs: ['match', 'replace'],
     component: lazy(() => import('@/pages/RegexTester')),
   },
 
@@ -206,11 +214,12 @@ export const tools: ToolDefinition[] = [
     icon: Hash,
     keywords: ['hash', 'md5', 'sha1', 'sha256', 'sha384', 'sha512', 'hmac', 'checksum', 'password strength', 'file hash'],
     features: [
-      { id: 'hash', name: 'Hash generator', keywords: ['md5', 'sha256'] },
-      { id: 'checksum', name: 'Verify a file checksum', keywords: ['sha256sum', 'iso', 'download', 'integrity'] },
-      { id: 'hmac', name: 'HMAC' },
-      { id: 'password', name: 'Password strength' },
+      { id: 'hash', name: 'Hash generator', keywords: ['md5', 'sha256'], tab: 'hash' },
+      { id: 'checksum', name: 'Verify a file checksum', keywords: ['sha256sum', 'iso', 'download', 'integrity'], tab: 'hash' },
+      { id: 'hmac', name: 'HMAC', tab: 'hmac' },
+      { id: 'password', name: 'Password strength', tab: 'password' },
     ],
+    tabs: ['hash', 'hmac', 'password'],
     component: lazy(() => import('@/pages/HashVerify')),
   },
   {
@@ -222,12 +231,13 @@ export const tools: ToolDefinition[] = [
     icon: Dices,
     keywords: ['uuid', 'guid', 'random', 'password', 'lorem ipsum', 'generate'],
     features: [
-      { id: 'uuid', name: 'UUID generator', keywords: ['guid', 'v4', 'v7', 'v1', 'v5'] },
-      { id: 'uuid-inspect', name: 'UUID validator & inspector', keywords: ['validate', 'version', 'timestamp'] },
-      { id: 'password', name: 'Password generator', keywords: ['secure', 'random string'] },
-      { id: 'random', name: 'Random numbers & hex', keywords: ['api key', 'secret', 'dice'] },
-      { id: 'lorem', name: 'Lorem Ipsum' },
+      { id: 'uuid', name: 'UUID generator', keywords: ['guid', 'v4', 'v7', 'v1', 'v5'], tab: 'uuid' },
+      { id: 'uuid-inspect', name: 'UUID validator & inspector', keywords: ['validate', 'version', 'timestamp'], tab: 'uuid' },
+      { id: 'password', name: 'Password generator', keywords: ['secure', 'random string'], tab: 'password' },
+      { id: 'random', name: 'Random numbers & hex', keywords: ['api key', 'secret', 'dice'], tab: 'random' },
+      { id: 'lorem', name: 'Lorem Ipsum', tab: 'lorem' },
     ],
+    tabs: ['uuid', 'password', 'random', 'lorem'],
     component: lazy(() => import('@/pages/GeneratorToolkit')),
   },
 
@@ -255,9 +265,10 @@ export const tools: ToolDefinition[] = [
     icon: QrCode,
     keywords: ['qr', 'qrcode', 'barcode', 'wifi qr', 'vcard'],
     features: [
-      { id: 'wifi', name: 'Wi-Fi QR code', keywords: ['wireless', 'password', 'guest network'] },
-      { id: 'contact', name: 'Contact card QR (vCard)', keywords: ['business card'] },
+      { id: 'wifi', name: 'Wi-Fi QR code', keywords: ['wireless', 'password', 'guest network'], tab: 'wifi' },
+      { id: 'contact', name: 'Contact card QR (vCard)', keywords: ['business card'], tab: 'contact' },
     ],
+    tabs: ['text', 'wifi', 'email', 'phone', 'contact'],
     component: lazy(() => import('@/pages/QRCodeGenerator')),
   },
   {
@@ -269,12 +280,13 @@ export const tools: ToolDefinition[] = [
     icon: Tags,
     keywords: ['seo', 'meta tags', 'open graph', 'twitter card', 'robots.txt', 'sitemap', 'schema'],
     features: [
-      { id: 'meta', name: 'Meta & Open Graph tags' },
-      { id: 'robots', name: 'robots.txt generator', keywords: ['block ai crawlers', 'gptbot'] },
-      { id: 'sitemap', name: 'sitemap.xml' },
-      { id: 'canonical', name: 'Canonical URL' },
-      { id: 'schema', name: 'Schema.org JSON-LD' },
+      { id: 'meta', name: 'Meta & Open Graph tags', tab: 'meta' },
+      { id: 'robots', name: 'robots.txt generator', keywords: ['block ai crawlers', 'gptbot'], tab: 'robots' },
+      { id: 'sitemap', name: 'sitemap.xml', tab: 'sitemap' },
+      { id: 'canonical', name: 'Canonical URL', tab: 'meta' },
+      { id: 'schema', name: 'Schema.org JSON-LD', tab: 'schema' },
     ],
+    tabs: ['meta', 'robots', 'sitemap', 'schema'],
     component: lazy(() => import('@/pages/SEOGenerator')),
   },
 
@@ -288,9 +300,10 @@ export const tools: ToolDefinition[] = [
     icon: Clock,
     keywords: ['unix', 'epoch', 'timestamp', 'date', 'cron', 'crontab'],
     features: [
-      { id: 'unix', name: 'Unix timestamp converter', keywords: ['epoch'] },
-      { id: 'cron', name: 'Cron expression explainer', keywords: ['crontab', 'schedule', 'next run'] },
+      { id: 'unix', name: 'Unix timestamp converter', keywords: ['epoch'], tab: 'unix' },
+      { id: 'cron', name: 'Cron expression explainer', keywords: ['crontab', 'schedule', 'next run'], tab: 'cron' },
     ],
+    tabs: ['unix', 'cron'],
     component: lazy(() => import('@/pages/TimestampTools')),
   },
   {
@@ -343,9 +356,17 @@ export function getToolById(id: string): ToolDefinition | undefined {
   return tools.find((t) => t.id === id)
 }
 
+/** Finds the tool for a path, including tab sub-routes (`/generators/uuid`). */
 export function getToolByPath(pathname: string): ToolDefinition | undefined {
   const clean = pathname.replace(/\/+$/, '') || '/'
-  return tools.find((t) => t.path === clean || t.aliases?.includes(clean))
+  return tools.find(
+    (t) => t.path === clean || (t.tabs && clean.startsWith(`${t.path}/`) && t.tabs.includes(clean.slice(t.path.length + 1))),
+  )
+}
+
+/** URL of a tool, optionally at a tab (the default tab has no suffix). */
+export function toolHref(tool: ToolDefinition, tab?: string): string {
+  return tab && tool.tabs?.includes(tab) && tab !== tool.tabs[0] ? `${tool.path}/${tab}` : tool.path
 }
 
 export function toolsByCategory(list: ToolDefinition[] = visibleTools) {

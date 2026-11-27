@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { BookOpen, ChevronRight, Heart, MoreHorizontal, Search, ShieldCheck } from 'lucide-react'
+import { BookOpen, ChevronRight, Heart, Keyboard, MoreHorizontal, Search, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -12,12 +13,15 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { GithubIcon } from '@/components/icons'
-import { PrivacyDialog, SupportDialog } from '@/components/SiteDialogs'
+import { PrivacyDialog, ShortcutsDialog, SupportDialog } from '@/components/SiteDialogs'
 import { categories, getToolByPath } from '@/tools/registry'
 import { useCommandPalette } from './command-palette-context'
 import { site } from '@/config/site'
 
-type SiteModal = 'privacy' | 'support'
+type SiteModal = 'privacy' | 'support' | 'shortcuts'
+
+const isTyping = (t: EventTarget | null) =>
+  t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
 
 export function TopBar() {
   const { pathname } = useLocation()
@@ -34,6 +38,23 @@ export function TopBar() {
     else params.delete('modal')
     setSearchParams(params, { replace: !next })
   }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey && !isTyping(e.target)) {
+        e.preventDefault()
+        setSearchParams(
+          (prev) => {
+            const p = new URLSearchParams(prev)
+            p.set('modal', 'shortcuts')
+            return p
+          },
+        )
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [setSearchParams])
 
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-4">
@@ -92,6 +113,9 @@ export function TopBar() {
             <DropdownMenuItem onSelect={() => setModal('support')}>
               <Heart /> Support
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setModal('shortcuts')}>
+              <Keyboard /> Keyboard shortcuts
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/contribute">
@@ -104,6 +128,7 @@ export function TopBar() {
 
       <PrivacyDialog open={modal === 'privacy'} onOpenChange={(o) => setModal(o ? 'privacy' : null)} />
       <SupportDialog open={modal === 'support'} onOpenChange={(o) => setModal(o ? 'support' : null)} />
+      <ShortcutsDialog open={modal === 'shortcuts'} onOpenChange={(o) => setModal(o ? 'shortcuts' : null)} />
     </header>
   )
 }

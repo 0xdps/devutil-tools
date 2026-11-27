@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowUpToLine, Check, Clock, Plus, X } from 'lucide-react'
 import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
 import { CopyButton } from '@/components/tool/CopyButton'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -152,6 +153,15 @@ export default function TimezoneCompare() {
     .join(' · ')
 
   const sharedList = [...shared]
+  useToolOutput(summary)
+  useShareState({ zones, mode, custom }, (s) => {
+    const valid = Array.isArray(s.zones) ? s.zones.filter((z): z is string => typeof z === 'string' && isValidZone(z)) : []
+    if (valid.length) setZones([...new Set(valid)])
+    if (s.mode === 'custom' && s.custom && typeof s.custom.date === 'string' && typeof s.custom.time === 'string') {
+      setCustom({ date: s.custom.date, time: s.custom.time })
+      setMode('custom')
+    }
+  })
 
   return (
     <ToolPage

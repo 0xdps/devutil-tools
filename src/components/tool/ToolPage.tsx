@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Star } from 'lucide-react'
+import { Link2, Share2, Star, X } from 'lucide-react'
 import SEO from '@/components/SEO'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,12 +8,13 @@ import type { ToolMeta } from '@/config/seoConfig'
 import { useFavorites } from '@/hooks/use-tool-prefs'
 import { getToolById } from '@/tools/registry'
 import { cn } from '@/lib/utils'
+import { useToolActions } from './tool-actions'
 
 interface ToolPageProps {
   /** Registry id; supplies the name, icon and description. */
   toolId: string
   meta: ToolMeta
-  /** Extra header actions (share, reset…), shown left of the favorite star. */
+  /** Extra header actions, shown left of Share and the favorite star. */
   actions?: ReactNode
   /** Reference/help content rendered below the tool. */
   reference?: ReactNode
@@ -21,10 +22,11 @@ interface ToolPageProps {
   className?: string
 }
 
-/** Standard frame for every tool: SEO, header with actions, body, reference. */
+/** Standard frame for every tool: SEO, header (share, favorite), shared-link notice, body, reference. */
 export function ToolPage({ toolId, meta, actions, reference, children, className }: ToolPageProps) {
   const tool = getToolById(toolId)
   const { isFavorite, toggleFavorite } = useFavorites()
+  const toolActions = useToolActions()
   if (!tool) throw new Error(`Unknown tool id "${toolId}"`)
   const Icon = tool.icon
   const favorite = isFavorite(tool.id)
@@ -56,6 +58,16 @@ export function ToolPage({ toolId, meta, actions, reference, children, className
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {actions}
+            {toolActions?.canShare && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => void toolActions.share()} aria-label="Copy share link">
+                    <Share2 />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy share link (⌥⇧S)</TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -72,6 +84,18 @@ export function ToolPage({ toolId, meta, actions, reference, children, className
             </Tooltip>
           </div>
         </header>
+
+        {toolActions?.loadedFromShare && (
+          <div role="status" className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+            <Link2 className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p className="flex-1">
+              Opened from a shared link. The content came from whoever sent it, so review it before running or relying on it.
+            </p>
+            <Button variant="ghost" size="icon-xs" aria-label="Dismiss" onClick={toolActions.dismissSharedNotice}>
+              <X />
+            </Button>
+          </div>
+        )}
 
         {children}
 
