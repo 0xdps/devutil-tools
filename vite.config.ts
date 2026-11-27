@@ -108,10 +108,10 @@ export default defineConfig({
                     const pkg = (name: RegExp) => new RegExp(`[\\\\/]node_modules[\\\\/]${name.source}[\\\\/]`).test(id)
                     if (pkg(/(react|react-dom|scheduler)/)) return 'vendor-react'
                     if (pkg(/(react-router|react-router-dom)/)) return 'vendor-router'
-                    // Design system: Radix primitives, cmdk, icons, toasts, panels
-                    if (pkg(/(@radix-ui[\\\\/][^\\\\/]+|radix-ui|cmdk|lucide-react|sonner|next-themes|react-resizable-panels|cn|class-variance-authority|@floating-ui[\\\\/][^\\\\/]+)/)) return 'vendor-ui'
-                    // Everything else is split naturally, so libraries used by a
-                    // single lazy tool page load only with that page.
+                    // ~200-byte icon modules would otherwise each become a request
+                    if (pkg(/lucide-react/)) return 'vendor-icons'
+                    // Everything else (UI primitives included) is split by usage, so
+                    // code needed only by lazy tool pages loads with those pages.
                     return undefined
                 },
                 chunkFileNames: 'assets/[name]-[hash].js',

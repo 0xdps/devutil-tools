@@ -177,6 +177,10 @@
   code, kbd, samp, pre {
     @apply font-mono;
   }
+  /* Show code exactly as typed: no "=>" → "⇒" ligatures. */
+  code, kbd, samp, pre, textarea, .font-mono, .cm-editor {
+    font-variant-ligatures: none;
+  }
 
   /* Native <select> in not-yet-migrated pages: follow the tokens. */
   select {
