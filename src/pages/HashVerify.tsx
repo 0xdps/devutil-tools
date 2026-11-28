@@ -1,476 +1,438 @@
-import { useState } from 'react'
-import CryptoJS from 'crypto-js'
-import toast from 'react-hot-toast'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Eye, EyeOff, Loader2, ShieldAlert, Sparkles } from 'lucide-react'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { SegmentedControl } from '@/components/tool/SegmentedControl'
+import { useIncomingInput, useToolOutput } from '@/components/tool/tool-actions'
+import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
+import { CopyButton } from '@/components/tool/CopyButton'
+import { FileDrop } from '@/components/tool/FileDrop'
+import { StatusPill } from '@/components/tool/StatusPill'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useTabParam } from '@/hooks/use-tab-param'
+import { base64ToBytes } from '@/lib/encoding'
+import {
+  HASH_ALGORITHMS,
+  HMAC_ALGORITHMS,
+  WEAK_ALGORITHMS,
+  bytesEqual,
+  digest,
+  formatDigest,
+  hexToBytes,
+  hmac,
+  parseExpectedDigest,
+  type DigestFormat,
+  type HashAlgorithm,
+} from '@/lib/hash'
+import { estimatePassword } from '@/lib/password'
+import { cn } from '@/lib/utils'
 
-export default function HashVerify() {
-  const meta = toolsMetadata.hashVerify
-  const [activeTab, setActiveTab] = useState<'hash' | 'hmac' | 'password'>('hash')
-  
-  // Hash States
-  const [hashInput, setHashInput] = useState('')
-  const [hashAlgorithm, setHashAlgorithm] = useState<'md5' | 'sha1' | 'sha256' | 'sha512'>('sha256')
-  const [hashOutput, setHashOutput] = useState('')
-  
-  // HMAC States
-  const [hmacInput, setHmacInput] = useState('')
-  const [hmacKey, setHmacKey] = useState('')
-  const [hmacAlgorithm, setHmacAlgorithm] = useState<'sha1' | 'sha256' | 'sha512'>('sha256')
-  const [hmacOutput, setHmacOutput] = useState('')
-  
-  // Password States
-  const [password, setPassword] = useState('')
-  const [passwordStrength, setPasswordStrength] = useState<{
-    score: number
-    label: string
-    color: string
-    feedback: string[]
-  } | null>(null)
+const TABS = ['hash', 'hmac', 'password'] as const
+const MAX_FILE_BYTES = 1024 * 1024 * 1024 // 1 GB: digests read the whole file into memory
+const utf8 = (s: string) => new TextEncoder().encode(s)
 
-  const hashInfo = {
-    md5: 'MD5 (128-bit): Fast but cryptographically broken. Use only for checksums, not security.',
-    sha1: 'SHA-1 (160-bit): Deprecated for security. Collision vulnerabilities found.',
-    sha256: 'SHA-256 (256-bit): Industry standard. Secure and widely used for passwords and certificates.',
-    sha512: 'SHA-512 (512-bit): Most secure. Longer output, slower but more resistant to attacks.'
+type Digests = Partial<Record<HashAlgorithm, Uint8Array>>
+
+function FormatToggle({ value, onChange }: { value: DigestFormat; onChange: (f: DigestFormat) => void }) {
+  return (
+    <ToggleGroup
+      type="single"
+      size="sm"
+      variant="outline"
+      value={value}
+      onValueChange={(v) => v && onChange(v as DigestFormat)}
+      aria-label="Output format"
+    >
+      <ToggleGroupItem value="hex" className="px-2.5 font-mono text-xs">
+        hex
+      </ToggleGroupItem>
+      <ToggleGroupItem value="HEX" className="px-2.5 font-mono text-xs">
+        HEX
+      </ToggleGroupItem>
+      <ToggleGroupItem value="base64" className="px-2.5 text-xs">
+        Base64
+      </ToggleGroupItem>
+    </ToggleGroup>
+  )
+}
+
+function DigestRows({
+  digests,
+  format,
+  busy,
+  match,
+  prefix = '',
+}: {
+  digests: Digests
+  format: DigestFormat
+  busy: boolean
+  match?: HashAlgorithm
+  prefix?: string
+}) {
+  const algorithms = (Object.keys(digests) as HashAlgorithm[]).length ? (Object.keys(digests) as HashAlgorithm[]) : []
+  if (!algorithms.length) {
+    return (
+      <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+        {busy ? (
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" /> Hashing…
+          </span>
+        ) : (
+          'Digests appear here as you type.'
+        )}
+      </p>
+    )
   }
+  return (
+    <ul className={cn('divide-y transition-opacity', busy && 'opacity-60')}>
+      {algorithms.map((alg) => {
+        const value = formatDigest(digests[alg]!, format)
+        return (
+          <li key={alg} className={cn('flex items-start gap-3 px-3 py-2.5', match === alg && 'bg-success/10')}>
+            <div className="w-28 shrink-0 pt-0.5">
+              <div className="text-sm font-medium">
+                {prefix}
+                {alg}
+              </div>
+              {WEAK_ALGORITHMS.has(alg) && <div className="text-[11px] text-warning">not for security</div>}
+            </div>
+            <code className="min-w-0 flex-1 pt-0.5 font-mono text-[13px] break-all">{value}</code>
+            <CopyButton value={value} label={`Copy ${prefix}${alg}`} iconOnly toolName="hash_verify" />
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
-  const hmacInfo = {
-    sha1: 'HMAC-SHA1: Message authentication using SHA-1. Fast but less secure.',
-    sha256: 'HMAC-SHA256: Industry standard for API signatures and JWT tokens.',
-    sha512: 'HMAC-SHA512: Maximum security for message authentication codes.'
-  }
+// ── Hash ────────────────────────────────────────────────────────────
 
-  const generateHash = () => {
-    if (!hashInput) {
-      toast.error('Please enter text to hash')
-      return
+function HashTab() {
+  const [source, setSource] = useState<'text' | 'file'>('text')
+  const [text, setText] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [format, setFormat] = useState<DigestFormat>('hex')
+  const [expected, setExpected] = useState('')
+  const [digests, setDigests] = useState<Digests>({})
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const deferredText = useDeferredValue(text)
+
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setError('')
+      if (source === 'file' && !file) return setDigests({})
+      if (source === 'file' && file && file.size > MAX_FILE_BYTES) {
+        setDigests({})
+        return setError('Files over 1 GB are too large to hash in the browser.')
+      }
+      setBusy(true)
+      try {
+        const data = source === 'file' ? new Uint8Array(await file!.arrayBuffer()) : utf8(deferredText)
+        const entries = await Promise.all(HASH_ALGORITHMS.map(async (alg) => [alg, await digest(alg, data)] as const))
+        if (!cancelled) setDigests(Object.fromEntries(entries))
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e))
+      } finally {
+        if (!cancelled) setBusy(false)
+      }
     }
-
-    let hash = ''
-    switch (hashAlgorithm) {
-      case 'md5':
-        hash = CryptoJS.MD5(hashInput).toString()
-        break
-      case 'sha1':
-        hash = CryptoJS.SHA1(hashInput).toString()
-        break
-      case 'sha256':
-        hash = CryptoJS.SHA256(hashInput).toString()
-        break
-      case 'sha512':
-        hash = CryptoJS.SHA512(hashInput).toString()
-        break
+    void run()
+    return () => {
+      cancelled = true
     }
+  }, [source, deferredText, file])
 
-    setHashOutput(hash)
-    toast.success('Hash generated')
-  }
-
-  const generateHmac = () => {
-    if (!hmacInput) {
-      toast.error('Please enter message')
-      return
-    }
-    if (!hmacKey) {
-      toast.error('Please enter secret key')
-      return
-    }
-
-    let hmac = ''
-    switch (hmacAlgorithm) {
-      case 'sha1':
-        hmac = CryptoJS.HmacSHA1(hmacInput, hmacKey).toString()
-        break
-      case 'sha256':
-        hmac = CryptoJS.HmacSHA256(hmacInput, hmacKey).toString()
-        break
-      case 'sha512':
-        hmac = CryptoJS.HmacSHA512(hmacInput, hmacKey).toString()
-        break
-    }
-
-    setHmacOutput(hmac)
-    toast.success('HMAC generated')
-  }
-
-  const checkPasswordStrength = () => {
-    if (!password) {
-      toast.error('Please enter a password')
-      return
-    }
-
-    let score = 0
-    const feedback: string[] = []
-
-    // Length check
-    if (password.length >= 8) score++
-    if (password.length >= 12) score++
-    if (password.length >= 16) score++
-    else feedback.push('Use at least 12 characters')
-
-    // Character variety
-    if (/[a-z]/.test(password)) score++
-    else feedback.push('Add lowercase letters')
-    
-    if (/[A-Z]/.test(password)) score++
-    else feedback.push('Add uppercase letters')
-    
-    if (/[0-9]/.test(password)) score++
-    else feedback.push('Add numbers')
-    
-    if (/[^a-zA-Z0-9]/.test(password)) score++
-    else feedback.push('Add special characters')
-
-    // Common patterns check
-    if (/(.)\1{2,}/.test(password)) {
-      score--
-      feedback.push('Avoid repeating characters')
-    }
-
-    let label = ''
-    let color = ''
-    if (score <= 2) {
-      label = 'Weak'
-      color = 'red'
-    } else if (score <= 4) {
-      label = 'Fair'
-      color = 'orange'
-    } else if (score <= 6) {
-      label = 'Good'
-      color = 'yellow'
-    } else {
-      label = 'Strong'
-      color = 'green'
-    }
-
-    setPasswordStrength({ score, label, color, feedback })
-  }
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      toast.success('Copied to clipboard!')
-    } catch {
-      toast.error('Failed to copy')
-    }
-  }
+  useIncomingInput<{ expected: string }>((v) => typeof v.expected === 'string' && setExpected(v.expected))
+  // Copy-output gives the SHA-256; no share links (inputs are often secrets).
+  useToolOutput(digests['SHA-256'] ? formatDigest(digests['SHA-256'], format) : '')
+  const expectedBytes = useMemo(() => parseExpectedDigest(expected), [expected])
+  const match = expectedBytes
+    ? (Object.keys(digests) as HashAlgorithm[]).find((alg) => bytesEqual(digests[alg]!, expectedBytes))
+    : undefined
 
   return (
-    <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Hash & Verify
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Generate hashes, HMAC signatures, and test password strength
-          </p>
-        </div>
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <ToolPanel
+        title="Input"
+        actions={
+          <SegmentedControl
+            label="Input source"
+            size="sm"
+            value={source}
+            onValueChange={setSource}
+            options={[
+              { value: 'text', label: 'Text' },
+              { value: 'file', label: 'File' },
+            ]}
+          />
+        }
+        footer={source === 'text' ? `${utf8(text).length.toLocaleString()} bytes (UTF-8)` : undefined}
+      >
+        {(labelId) =>
+          source === 'text' ? (
+            <CodeArea aria-labelledby={labelId} autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Type or paste text to hash…" />
+          ) : (
+            <div className="p-3">
+              <FileDrop file={file} onFile={setFile} hint="Up to 1 GB" />
+            </div>
+          )
+        }
+      </ToolPanel>
 
-      {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('hash')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'hash'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-            }`}
+      <div className="space-y-4">
+        <ToolPanel title="Digests" actions={<FormatToggle value={format} onChange={setFormat} />}>
+          {() =>
+            error ? (
+              <p role="alert" className="px-3 py-4 text-sm text-destructive">
+                {error}
+              </p>
+            ) : (
+              <DigestRows digests={digests} format={format} busy={busy} match={match} />
+            )
+          }
+        </ToolPanel>
+
+        <div className="space-y-2 rounded-xl border bg-card p-4 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="expected-hash">Verify against a checksum</Label>
+            {expected.trim() &&
+              (match ? (
+                <StatusPill tone="success">Matches {match}</StatusPill>
+              ) : expectedBytes ? (
+                <StatusPill tone="danger">No match</StatusPill>
+              ) : (
+                <StatusPill tone="neutral">Not a hex or Base64 digest</StatusPill>
+              ))}
+          </div>
+          <Input
+            id="expected-hash"
+            value={expected}
+            onChange={(e) => setExpected(e.target.value)}
+            placeholder="Paste the published SHA-256 / MD5 / … (hex or Base64)"
+            className="font-mono text-[13px]"
+            spellCheck={false}
+          />
+          <p className="text-xs text-muted-foreground">The algorithm is detected automatically. Lines like “&lt;hash&gt;  file.iso” work too.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── HMAC ────────────────────────────────────────────────────────────
+
+type KeyEncoding = 'utf8' | 'hex' | 'base64'
+
+function HmacTab() {
+  const [message, setMessage] = useState('')
+  const [key, setKey] = useState('')
+  const [keyEncoding, setKeyEncoding] = useState<KeyEncoding>('utf8')
+  const [format, setFormat] = useState<DigestFormat>('hex')
+  const [digests, setDigests] = useState<Digests>({})
+  const [error, setError] = useState('')
+  const deferredMessage = useDeferredValue(message)
+  const deferredKey = useDeferredValue(key)
+
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      let keyBytes: Uint8Array
+      try {
+        keyBytes = keyEncoding === 'hex' ? hexToBytes(deferredKey) : keyEncoding === 'base64' ? base64ToBytes(deferredKey) : utf8(deferredKey)
+      } catch {
+        setDigests({})
+        return setError(`The key is not valid ${keyEncoding === 'hex' ? 'hex' : 'Base64'}.`)
+      }
+      setError('')
+      const data = utf8(deferredMessage)
+      const entries = await Promise.all(HMAC_ALGORITHMS.map(async (alg) => [alg, await hmac(alg, keyBytes, data)] as const))
+      if (!cancelled) setDigests(Object.fromEntries(entries))
+    }
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [deferredMessage, deferredKey, keyEncoding])
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="hmac-key">Secret key</Label>
+          <div className="flex gap-2">
+            <Input
+              id="hmac-key"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="Shared secret"
+              className="flex-1 font-mono"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Select value={keyEncoding} onValueChange={(v) => setKeyEncoding(v as KeyEncoding)}>
+              <SelectTrigger className="w-28" aria-label="Key encoding">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="utf8">Text</SelectItem>
+                <SelectItem value="hex">Hex</SelectItem>
+                <SelectItem value="base64">Base64</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <ToolPanel title="Message">
+          {(labelId) => (
+            <CodeArea aria-labelledby={labelId} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message to sign…" />
+          )}
+        </ToolPanel>
+      </div>
+      <ToolPanel title="HMAC signatures" actions={<FormatToggle value={format} onChange={setFormat} />}>
+        {() =>
+          error ? (
+            <p role="alert" className="px-3 py-4 text-sm text-destructive">
+              {error}
+            </p>
+          ) : (
+            <DigestRows digests={digests} format={format} busy={false} prefix="HMAC-" />
+          )
+        }
+      </ToolPanel>
+    </div>
+  )
+}
+
+// ── Password strength ───────────────────────────────────────────────
+
+const METER = ['bg-destructive', 'bg-destructive', 'bg-warning', 'bg-success', 'bg-success']
+
+function PasswordTab() {
+  const [password, setPassword] = useState('')
+  const [visible, setVisible] = useState(false)
+  const estimate = useMemo(() => (password ? estimatePassword(password) : null), [password])
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="pw-input">Password</Label>
+        <div className="relative">
+          <Input
+            id="pw-input"
+            type={visible ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Type a password to test"
+            className="h-11 pr-11 font-mono text-base"
+            autoComplete="off"
+            spellCheck={false}
+            aria-describedby="pw-result"
+          />
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="absolute top-1/2 right-1.5 -translate-y-1/2"
+            onClick={() => setVisible(!visible)}
+            aria-label={visible ? 'Hide password' : 'Show password'}
+            aria-pressed={visible}
           >
-            #️⃣ Hash Generator
-          </button>
-          <button
-            onClick={() => setActiveTab('hmac')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'hmac'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-            }`}
-          >
-            🔐 HMAC Generator
-          </button>
-          <button
-            onClick={() => setActiveTab('password')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'password'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-            }`}
-          >
-            🛡️ Password Strength
-          </button>
-        </nav>
+            {visible ? <EyeOff /> : <Eye />}
+          </Button>
+        </div>
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldAlert className="size-3.5" /> Checked locally. Still, don’t paste passwords you actually use into websites.
+        </p>
       </div>
 
-      {/* Hash Tab */}
-      {activeTab === 'hash' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Algorithm
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hashAlgorithm === 'md5'}
-                      onChange={() => setHashAlgorithm('md5')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">MD5</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hashAlgorithm === 'sha1'}
-                      onChange={() => setHashAlgorithm('sha1')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">SHA-1</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hashAlgorithm === 'sha256'}
-                      onChange={() => setHashAlgorithm('sha256')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">SHA-256</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hashAlgorithm === 'sha512'}
-                      onChange={() => setHashAlgorithm('sha512')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">SHA-512</span>
-                  </label>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    ℹ️ {hashInfo[hashAlgorithm]}
-                  </p>
-                </div>
+      <div id="pw-result" aria-live="polite" className="space-y-4">
+        {estimate && (
+          <>
+            <div className="space-y-2">
+              <div className="flex gap-1.5" role="meter" aria-valuemin={0} aria-valuemax={4} aria-valuenow={estimate.score} aria-label="Strength">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className={cn('h-2 flex-1 rounded-full bg-muted', i <= estimate.score && METER[estimate.score])} />
+                ))}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Input Text
-                </label>
-                <textarea
-                  value={hashInput}
-                  onChange={(e) => setHashInput(e.target.value)}
-                  placeholder="Enter text to hash..."
-                  className="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 resize-none"
-                />
-              </div>
-
-              <button
-                onClick={generateHash}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
-              >
-                Generate Hash
-              </button>
-            </div>
-          </div>
-
-          {hashOutput && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Hash Output</h3>
-                <button
-                  onClick={() => copyToClipboard(hashOutput)}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-                >
-                  📋 Copy
-                </button>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded font-mono text-sm break-all">
-                <span className="text-gray-900 dark:text-white">{hashOutput}</span>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-lg font-semibold">{estimate.label}</span>
+                <span className="text-sm text-muted-foreground">≈ {estimate.bits} bits of entropy</span>
               </div>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* HMAC Tab */}
-      {activeTab === 'hmac' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Algorithm
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hmacAlgorithm === 'sha1'}
-                      onChange={() => setHmacAlgorithm('sha1')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">HMAC-SHA1</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hmacAlgorithm === 'sha256'}
-                      onChange={() => setHmacAlgorithm('sha256')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">HMAC-SHA256</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={hmacAlgorithm === 'sha512'}
-                      onChange={() => setHmacAlgorithm('sha512')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">HMAC-SHA512</span>
-                  </label>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    ℹ️ {hmacInfo[hmacAlgorithm]}
-                  </p>
-                </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border bg-card p-3">
+                <dt className="text-xs text-muted-foreground">Offline attack (10 billion guesses/s)</dt>
+                <dd className="mt-1 font-medium">{estimate.offlineCrackTime}</dd>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={hmacInput}
-                  onChange={(e) => setHmacInput(e.target.value)}
-                  placeholder="Enter message..."
-                  className="w-full h-24 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 resize-none"
-                />
+              <div className="rounded-lg border bg-card p-3">
+                <dt className="text-xs text-muted-foreground">Online, rate-limited (100 guesses/h)</dt>
+                <dd className="mt-1 font-medium">{estimate.onlineCrackTime}</dd>
               </div>
+            </dl>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Secret Key
-                </label>
-                <input
-                  type="text"
-                  value={hmacKey}
-                  onChange={(e) => setHmacKey(e.target.value)}
-                  placeholder="Enter secret key..."
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
-                />
-              </div>
-
-              <button
-                onClick={generateHmac}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
-              >
-                Generate HMAC
-              </button>
-            </div>
-          </div>
-
-          {hmacOutput && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">HMAC Output</h3>
-                <button
-                  onClick={() => copyToClipboard(hmacOutput)}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-                >
-                  📋 Copy
-                </button>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded font-mono text-sm break-all">
-                <span className="text-gray-900 dark:text-white">{hmacOutput}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Password Strength Tab */}
-      {activeTab === 'password' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
-                </label>
-                <input
-                  type="text"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password to test..."
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
-                />
-              </div>
-
-              <button
-                onClick={checkPasswordStrength}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
-              >
-                Check Strength
-              </button>
-            </div>
-          </div>
-
-          {passwordStrength && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Password Strength</h3>
-              
-              <div className="mb-4">
-                <div className="flex justify-between mb-2">
-                  <span className={`font-medium text-${passwordStrength.color}-600 dark:text-${passwordStrength.color}-400`}>
-                    {passwordStrength.label}
-                  </span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {passwordStrength.score}/8
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div
-                    className={`bg-${passwordStrength.color}-500 h-3 rounded-full transition-all`}
-                    style={{ width: `${(passwordStrength.score / 8) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {passwordStrength.feedback.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 dark:text-white">Suggestions:</h4>
-                  <ul className="space-y-1">
-                    {passwordStrength.feedback.map((item, index) => (
-                      <li key={index} className="text-sm text-gray-600 dark:text-gray-400 flex items-start">
-                        <span className="mr-2">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+            {estimate.warnings.length > 0 && (
+              <ul className="space-y-1 text-sm text-destructive">
+                {estimate.warnings.map((w) => (
+                  <li key={w}>• {w}</li>
+                ))}
+              </ul>
+            )}
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {estimate.suggestions.map((s) => (
+                <li key={s}>• {s}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/generators/password">
+            <Sparkles /> Generate a strong password
+          </Link>
+        </Button>
+      </div>
     </div>
-    </>
+  )
+}
+
+// ── Page ────────────────────────────────────────────────────────────
+
+export default function HashVerify() {
+  const [tab, setTab] = useTabParam(TABS)
+
+  return (
+    <ToolPage
+      toolId="hash-verify"
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>MD5 and SHA-1 are broken for security (collisions are practical). Use them only to match legacy checksums.</li>
+          <li>A hash is not a password store. Use a slow, salted algorithm such as Argon2, scrypt or bcrypt for passwords.</li>
+          <li>HMAC proves a message came from someone holding the key; it is how webhooks and JWT HS256 are signed.</li>
+          <li>The strength estimate checks common passwords, keyboard walks, sequences, repeats and dates. It is an estimate.</li>
+        </ul>
+      }
+    >
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="hash">Hash</TabsTrigger>
+          <TabsTrigger value="hmac">HMAC</TabsTrigger>
+          <TabsTrigger value="password">Password strength</TabsTrigger>
+        </TabsList>
+        <TabsContent value="hash" className="mt-4">
+          <HashTab />
+        </TabsContent>
+        <TabsContent value="hmac" className="mt-4">
+          <HmacTab />
+        </TabsContent>
+        <TabsContent value="password" className="mt-4">
+          <PasswordTab />
+        </TabsContent>
+      </Tabs>
+    </ToolPage>
   )
 }

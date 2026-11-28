@@ -1,410 +1,203 @@
-import { useState } from 'react'
-import toast from 'react-hot-toast'
-import * as yaml from 'js-yaml'
-import Papa from 'papaparse'
-import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml'
-import { XMLParser, XMLBuilder } from 'fast-xml-parser'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
-import CustomSelect from '../components/CustomSelect'
+import { useDeferredValue, useMemo, useState } from 'react'
+import { ArrowLeftRight, CircleAlert, Eraser, FlaskConical, TriangleAlert, Wand2 } from 'lucide-react'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
+import { ToolPanel } from '@/components/tool/ToolPanel'
+import { CodeEditor } from '@/components/tool/CodeEditor'
+import { CopyButton } from '@/components/tool/CopyButton'
+import { DownloadButton } from '@/components/tool/DownloadButton'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { describeJsonError } from '@/lib/code-format'
+import { DATA_FORMATS, convertData, detectFormat, type DataFormat } from '@/lib/transform'
 
-type DataFormat = 'json' | 'csv' | 'yaml' | 'toml' | 'xml'
+const EXAMPLE = JSON.stringify(
+  [
+    { id: 1, name: 'Ada Lovelace', email: 'ada@example.com', active: true, address: { city: 'London', country: 'UK' } },
+    { id: 2, name: 'Alan Turing', email: 'alan@example.com', active: false, address: { city: 'Wilmslow', country: 'UK' } },
+  ],
+  null,
+  2,
+)
 
-interface FormatOption {
-  value: DataFormat
-  label: string
-  icon: string
+const EXTENSIONS: Record<DataFormat, [string, string]> = {
+  json: ['json', 'application/json'],
+  yaml: ['yaml', 'application/yaml'],
+  csv: ['csv', 'text/csv'],
+  toml: ['toml', 'application/toml'],
+  xml: ['xml', 'application/xml'],
 }
 
-const formats: FormatOption[] = [
-  { value: 'json', label: 'JSON', icon: '📋' },
-  { value: 'csv', label: 'CSV', icon: '📊' },
-  { value: 'yaml', label: 'YAML', icon: '📝' },
-  { value: 'toml', label: 'TOML', icon: '⚙️' },
-  { value: 'xml', label: 'XML', icon: '🔖' },
-]
+const label = (f: DataFormat) => DATA_FORMATS.find((d) => d.value === f)!.label
+
+function FormatSelect({ id, value, onChange, labelText }: { id: string; value: DataFormat; onChange: (f: DataFormat) => void; labelText: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs text-muted-foreground">
+        {labelText}
+      </Label>
+      <Select value={value} onValueChange={(v) => onChange(v as DataFormat)}>
+        <SelectTrigger id={id} className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {DATA_FORMATS.map((f) => (
+            <SelectItem key={f.value} value={f.value}>
+              {f.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
 
 export default function DataTransform() {
-  const meta = toolsMetadata.dataTransform
-  
   const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [fromFormat, setFromFormat] = useState<DataFormat>('json')
-  const [toFormat, setToFormat] = useState<DataFormat>('csv')
-  const [error, setError] = useState('')
+  const [from, setFrom] = useState<DataFormat>('json')
+  const [to, setTo] = useState<DataFormat>('yaml')
+  const [indent, setIndent] = useState(2)
+  const deferred = useDeferredValue(input)
 
-  const parseJSON = (text: string) => {
-    return JSON.parse(text)
-  }
-
-  const parseCSV = (text: string) => {
-    const result = Papa.parse(text, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-    })
-    
-    if (result.errors.length > 0) {
-      throw new Error(result.errors[0].message)
-    }
-    
-    return result.data
-  }
-
-  const parseYAML = (text: string) => {
-    return yaml.load(text)
-  }
-
-  const parseToml = (text: string) => {
-    return parseTOML(text)
-  }
-
-  const parseXML = (text: string) => {
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: '@_',
-      textNodeName: '#text',
-      parseAttributeValue: true,
-      parseTagValue: true,
-      trimValues: true,
-    })
-    return parser.parse(text)
-  }
-
-  const toJSON = (data: unknown) => {
-    return JSON.stringify(data, null, 2)
-  }
-
-  const toCSV = (data: unknown) => {
-    let csvData: unknown[] = []
-    
-    if (Array.isArray(data)) {
-      csvData = data
-    } else if (typeof data === 'object' && data !== null) {
-      // Convert single object to array
-      csvData = [data]
-    } else {
-      throw new Error('Data must be an object or array of objects')
-    }
-    
-    const csv = Papa.unparse(csvData)
-    return csv
-  }
-
-  const toYAML = (data: unknown) => {
+  const result = useMemo((): { output: string; warnings: string[]; error?: string } => {
+    if (!deferred.trim()) return { output: '', warnings: [] }
     try {
-      return yaml.dump(data, {
-        indent: 2,
-        lineWidth: -1,
-        noRefs: true,
-        sortKeys: false,
-      })
-    } catch (err) {
-      throw new Error(`YAML conversion failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      return convertData(from, to, deferred, indent)
+    } catch (e) {
+      const message = from === 'json' ? describeJsonError(deferred, e) : e instanceof Error ? e.message : String(e)
+      return { output: '', warnings: [], error: message }
     }
+  }, [deferred, from, to, indent])
+
+  const detected = useMemo(() => detectFormat(deferred), [deferred])
+  useToolOutput(result.output)
+  useShareState({ from, to, indent, input }, (s) => {
+    const ok = (f: unknown): f is DataFormat => DATA_FORMATS.some((d) => d.value === f)
+    if (ok(s.from)) setFrom(s.from)
+    if (ok(s.to)) setTo(s.to)
+    if (s.indent === 2 || s.indent === 4) setIndent(s.indent)
+    setInput(String(s.input ?? ''))
+  })
+  const suggestion = result.error && detected && detected !== from ? detected : null
+
+  const swap = () => {
+    if (result.output) setInput(result.output)
+    setFrom(to)
+    setTo(from)
   }
 
-  const toTOML = (data: unknown) => {
-    try {
-      // TOML doesn't support top-level arrays, convert array to object with indexed keys
-      if (Array.isArray(data)) {
-        if (data.length === 0) {
-          throw new Error('Cannot convert empty array to TOML')
-        }
-        // If it's an array of objects (like CSV data), convert to named sections
-        const tomlData: Record<string, unknown> = {}
-        data.forEach((item, index) => {
-          tomlData[`item_${index}`] = item
-        })
-        return stringifyTOML(tomlData)
-      }
-      return stringifyTOML(data)
-    } catch (err) {
-      throw new Error(`TOML conversion failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
-    }
-  }
-
-  const toXML = (data: unknown) => {
-    try {
-      const builder = new XMLBuilder({
-        ignoreAttributes: false,
-        attributeNamePrefix: '@_',
-        textNodeName: '#text',
-        format: true,
-        indentBy: '  ',
-        suppressEmptyNode: true,
-      })
-      
-      // Wrap data in a root element if it's an array
-      const xmlData = Array.isArray(data) 
-        ? { root: { item: data } } 
-        : { root: data }
-      
-      return builder.build(xmlData)
-    } catch (err) {
-      throw new Error(`XML conversion failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
-    }
-  }
-
-  const convert = () => {
-    try {
-      setError('')
-      
-      if (!input.trim()) {
-        setError('Please enter data to convert')
-        return
-      }
-
-      // Parse input
-      let data: unknown
-      switch (fromFormat) {
-        case 'json':
-          data = parseJSON(input)
-          break
-        case 'csv':
-          data = parseCSV(input)
-          break
-        case 'yaml':
-          data = parseYAML(input)
-          break
-        case 'toml':
-          data = parseToml(input)
-          break
-        case 'xml':
-          data = parseXML(input)
-          break
-        default:
-          throw new Error('Unsupported input format')
-      }
-
-      // Convert to output format
-      let result: string
-      switch (toFormat) {
-        case 'json':
-          result = toJSON(data)
-          break
-        case 'csv':
-          result = toCSV(data)
-          break
-        case 'yaml':
-          result = toYAML(data)
-          break
-        case 'toml':
-          result = toTOML(data)
-          break
-        case 'xml':
-          result = toXML(data)
-          break
-        default:
-          throw new Error('Unsupported output format')
-      }
-
-      setOutput(result)
-      toast.success('Conversion successful!')
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Conversion failed'
-      setError(errorMessage)
-      setOutput('')
-      toast.error('Conversion failed')
-    }
-  }
-
-  const swapFormats = () => {
-    setFromFormat(toFormat)
-    setToFormat(fromFormat)
-    setInput(output)
-    setOutput(input)
-  }
-
-  const clearAll = () => {
-    setInput('')
-    setOutput('')
-    setError('')
-  }
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(output)
-      toast.success('Copied to clipboard!')
-    } catch (err) {
-      toast.error('Failed to copy to clipboard')
-    }
-  }
+  const [ext, mime] = EXTENSIONS[to]
 
   return (
-    <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Data Transform & Converter
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Convert between JSON, CSV, YAML, and TOML formats
-        </p>
-
-      {/* Format Selectors */}
-      <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            From
-          </label>
-          <CustomSelect<DataFormat>
-            value={fromFormat}
-            onChange={(val) => setFromFormat(val)}
-            options={formats}
-          />
-        </div>
-
-        <button
-          onClick={swapFormats}
-          className="mt-6 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg transition-colors"
-          title="Swap formats"
-        >
-          ⇄
-        </button>
-
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            To
-          </label>
-          <CustomSelect<DataFormat>
-            value={toFormat}
-            onChange={(val) => setToFormat(val)}
-            options={formats}
-          />
+    <ToolPage
+      toolId="data-transform"
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>CSV output flattens nested objects into dot-separated columns (address.city) and writes arrays as JSON.</li>
+          <li>TOML has no null and needs a table at the top level; such changes are listed as warnings, never applied silently.</li>
+          <li>XML attributes appear as keys prefixed with @_ and element text as #text, so they survive a round trip.</li>
+        </ul>
+      }
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <FormatSelect id="dt-from" labelText="From" value={from} onChange={setFrom} />
+        <Button variant="outline" size="icon" onClick={swap} aria-label="Swap formats and use the output as input" title="Swap">
+          <ArrowLeftRight />
+        </Button>
+        <FormatSelect id="dt-to" labelText="To" value={to} onChange={setTo} />
+        <div className="space-y-1.5">
+          <Label htmlFor="dt-indent" className="text-xs text-muted-foreground">
+            Indent
+          </Label>
+          <Select value={String(indent)} onValueChange={(v) => setIndent(Number(v))}>
+            <SelectTrigger id="dt-indent" className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2">2 spaces</SelectItem>
+              <SelectItem value="4">4 spaces</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* Input/Output Areas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Input ({fromFormat.toUpperCase()})
-          </label>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="w-full h-96 p-4 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder={`Enter ${fromFormat.toUpperCase()} data here...`}
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Output ({toFormat.toUpperCase()})
-            </label>
-            {output && (
-              <button
-                onClick={copyToClipboard}
-                className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+      <div className="grid gap-3 lg:grid-cols-2">
+        <ToolPanel
+          title={`${label(from)} input`}
+          actions={
+            <>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  setFrom('json')
+                  setInput(EXAMPLE)
+                }}
               >
-                Copy
-              </button>
-            )}
-          </div>
-          <textarea
-            value={output}
-            readOnly
-            className="w-full h-96 p-4 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-            placeholder="Converted data will appear here..."
-          />
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <button
-          onClick={convert}
-          className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                <FlaskConical /> Example
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => setInput('')} disabled={!input}>
+                <Eraser /> Clear
+              </Button>
+            </>
+          }
+          footer={
+            suggestion ? (
+              <span className="flex flex-wrap items-center gap-2">
+                This looks like {label(suggestion)}.
+                <Button variant="outline" size="xs" onClick={() => setFrom(suggestion)}>
+                  <Wand2 /> Read as {label(suggestion)}
+                </Button>
+              </span>
+            ) : (
+              `${input.split('\n').length.toLocaleString()} lines`
+            )
+          }
         >
-          Convert
-        </button>
-        <button
-          onClick={clearAll}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+          {(labelId) => (
+            <CodeEditor
+              value={input}
+              onChange={setInput}
+              language={from}
+              ariaLabelledBy={labelId}
+              placeholder={`Paste ${label(from)}…`}
+              autoFocus
+            />
+          )}
+        </ToolPanel>
+
+        <ToolPanel
+          title={`${label(to)} output`}
+          actions={
+            <>
+              <DownloadButton value={result.output} filename={`converted.${ext}`} mime={mime} toolName="data_transform" />
+              <CopyButton value={result.output} toolName="data_transform" />
+            </>
+          }
+          footer={
+            result.error ? (
+              <span role="alert" className="flex items-start gap-1.5 text-destructive">
+                <CircleAlert className="mt-0.5 size-3.5 shrink-0" /> {result.error}
+              </span>
+            ) : result.warnings.length ? (
+              <ul className="space-y-0.5 text-warning">
+                {result.warnings.map((w) => (
+                  <li key={w} className="flex items-start gap-1.5">
+                    <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {w}
+                  </li>
+                ))}
+              </ul>
+            ) : result.output ? (
+              `${result.output.split('\n').length.toLocaleString()} lines`
+            ) : (
+              'Converts as you type'
+            )
+          }
         >
-          Clear
-        </button>
+          {(labelId) => <CodeEditor value={result.output} language={to} readOnly ariaLabelledBy={labelId} placeholder="Output appears here" />}
+        </ToolPanel>
       </div>
-
-      {/* Format Examples */}
-      <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
-          Format Examples
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-          <div>
-            <strong className="text-blue-800 dark:text-blue-200">JSON:</strong>
-            <pre className="mt-1 text-blue-700 dark:text-blue-300 overflow-x-auto">
-{`{
-  "name": "John",
-  "age": 30
-}`}
-            </pre>
-          </div>
-          <div>
-            <strong className="text-blue-800 dark:text-blue-200">CSV:</strong>
-            <pre className="mt-1 text-blue-700 dark:text-blue-300 overflow-x-auto">
-{`name,age
-John,30
-Jane,25`}
-            </pre>
-          </div>
-          <div>
-            <strong className="text-blue-800 dark:text-blue-200">XML:</strong>
-            <pre className="mt-1 text-blue-700 dark:text-blue-300 overflow-x-auto">
-{`<root>
-  <item>
-    <name>John</name>
-    <age>30</age>
-  </item>
-  <item>
-    <name>Jane</name>
-    <age>25</age>
-  </item>
-</root>`}
-            </pre>
-          </div>
-          <div>
-            <strong className="text-blue-800 dark:text-blue-200">YAML:</strong>
-            <pre className="mt-1 text-blue-700 dark:text-blue-300 overflow-x-auto">
-{`- name: John
-  age: 30
-- name: Jane
-  age: 25`}
-            </pre>
-          </div>
-          <div>
-            <strong className="text-blue-800 dark:text-blue-200">TOML:</strong>
-            <pre className="mt-1 text-blue-700 dark:text-blue-300 overflow-x-auto">
-{`[item_0]
-name = "John"
-age = 30
-
-[item_1]
-name = "Jane"
-age = 25`}
-            </pre>
-          </div>
-        </div>
-      </div>
-    </div>
-    </>
+    </ToolPage>
   )
 }

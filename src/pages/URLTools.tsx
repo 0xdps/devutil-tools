@@ -1,180 +1,188 @@
-import { useState } from 'react'
-import toast from 'react-hot-toast'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowUpRight, Eraser, FlaskConical, Link2, Plus, Trash2 } from 'lucide-react'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
+import { CodeArea, ToolPanel } from '@/components/tool/ToolPanel'
+import { CopyButton } from '@/components/tool/CopyButton'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { parseUrl, urlParts, withParams, type ParsedUrl, type QueryParam } from '@/lib/url'
+
+const EXAMPLE = 'https://api.example.com:8080/v1/search?q=caf%C3%A9%20menu&tag=coffee&tag=paris&page=2#results'
+
+function tryParse(input: string): { parsed?: ParsedUrl; error?: string } {
+  if (!input.trim()) return {}
+  try {
+    return { parsed: parseUrl(input) }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) }
+  }
+}
 
 export default function URLTools() {
-  const meta = toolsMetadata.urlTools
-  const [url, setUrl] = useState('')
-  const [parsed, setParsed] = useState<URL | null>(null)
+  const [input, setInput] = useState('')
+  // Rows are a draft so a half-typed new parameter (empty key) survives edits.
+  const [rows, setRows] = useState<QueryParam[]>([])
+  const { parsed, error } = useMemo(() => tryParse(input), [input])
 
-  const parseURL = () => {
-    try {
-      const urlObj = new URL(url)
-      setParsed(urlObj)
-      toast.success('URL parsed')
-    } catch {
-      toast.error('Invalid URL')
-    }
+  const setUrlText = (text: string) => {
+    setInput(text)
+    setRows(tryParse(text).parsed?.params ?? [])
   }
 
-  const encode = () => {
-    setUrl(encodeURIComponent(url))
-    toast.success('Encoded')
+  const updateRows = (next: QueryParam[]) => {
+    setRows(next)
+    if (parsed) setInput(withParams(parsed.url, next))
   }
 
-  const decode = () => {
-    try {
-      setUrl(decodeURIComponent(url))
-      toast.success('Decoded')
-    } catch {
-      toast.error('Invalid encoded URL')
-    }
-  }
+  const parts = parsed ? urlParts(parsed.url) : []
+  useToolOutput(parsed?.url.href ?? '')
+  useShareState({ input }, (s) => setUrlText(String(s.input ?? '')))
 
   return (
-    <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">URL Tools</h1>
-      
-      <div className="space-y-6">
-        <div>
-          <textarea
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="w-full h-32 px-4 py-3 bg-white dark:bg-gray-800 border rounded-lg resize-none font-mono"
-            placeholder="Enter URL..."
+    <ToolPage
+      toolId="url-tools"
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            Parameters are shown decoded. When you edit them the query string is rebuilt with standard form encoding
+            (spaces become <code>+</code>).
+          </li>
+          <li>Repeated keys (<code>?tag=a&amp;tag=b</code>) are kept in order, as servers receive them.</li>
+          <li>
+            Need to percent-encode a single value?{' '}
+            <Link to="/encoding?scheme=url" className="text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
+              Use Encode / Decode
+            </Link>
+            .
+          </li>
+        </ul>
+      }
+    >
+      <ToolPanel
+        title="URL"
+        actions={
+          <>
+            <Button variant="ghost" size="xs" onClick={() => setUrlText(EXAMPLE)}>
+              <FlaskConical /> Example
+            </Button>
+            <Button variant="ghost" size="xs" onClick={() => setUrlText('')} disabled={!input}>
+              <Eraser /> Clear
+            </Button>
+            <CopyButton value={parsed?.url.href ?? input} toolName="url_tools" />
+          </>
+        }
+        footer={
+          error ? (
+            <span role="alert" className="text-destructive">
+              {error}
+            </span>
+          ) : parsed?.assumedScheme ? (
+            'No scheme given, so https:// is assumed.'
+          ) : parsed ? (
+            `${parsed.url.href.length.toLocaleString()} characters`
+          ) : (
+            'Paste any URL. Components and query parameters update as you type.'
+          )
+        }
+      >
+        {(labelId) => (
+          <CodeArea
+            aria-labelledby={labelId}
+            autoFocus
+            value={input}
+            onChange={(e) => setUrlText(e.target.value)}
+            placeholder="https://example.com/path?key=value"
+            aria-invalid={!!error}
+            className="min-h-20 break-all md:min-h-24"
           />
-          <div className="flex gap-4 mt-4">
-            <button onClick={parseURL} className="px-6 py-3 bg-primary-600 text-white rounded-lg">
-              Parse
-            </button>
-            <button onClick={encode} className="px-6 py-3 bg-green-600 text-white rounded-lg">
-              Encode
-            </button>
-            <button onClick={decode} className="px-6 py-3 bg-blue-600 text-white rounded-lg">
-              Decode
-            </button>
-          </div>
-        </div>
-
-        {parsed && (
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border space-y-2">
-            <h2 className="text-xl font-semibold mb-4">Parsed URL</h2>
-            <div><strong>Protocol:</strong> {parsed.protocol}</div>
-            <div><strong>Host:</strong> {parsed.host}</div>
-            <div><strong>Hostname:</strong> {parsed.hostname}</div>
-            <div><strong>Port:</strong> {parsed.port || '(default)'}</div>
-            <div><strong>Pathname:</strong> {parsed.pathname}</div>
-            <div><strong>Search:</strong> {parsed.search || '(none)'}</div>
-            <div><strong>Hash:</strong> {parsed.hash || '(none)'}</div>
-          </div>
         )}
+      </ToolPanel>
 
-        {/* Guide Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">📚 Usage Guide</h2>
-          
-          <div className="space-y-6">
-            {/* Parse Section */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">🔍 URL Parser</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Break down any URL into its components to understand its structure.
-              </p>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <p className="text-sm font-mono text-gray-800 dark:text-gray-200 mb-2">
-                  Example: <span className="text-primary-600 dark:text-primary-400">https://api.example.com:8080/v1/users?page=2&limit=10#results</span>
-                </p>
-                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 mt-3">
-                  <div>→ <strong>Protocol:</strong> https:</div>
-                  <div>→ <strong>Hostname:</strong> api.example.com</div>
-                  <div>→ <strong>Port:</strong> 8080</div>
-                  <div>→ <strong>Pathname:</strong> /v1/users</div>
-                  <div>→ <strong>Query:</strong> ?page=2&limit=10</div>
-                  <div>→ <strong>Hash:</strong> #results</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Encode Section */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">✅ URL Encoder</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Convert special characters to percent-encoded format for safe URL transmission.
-              </p>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="font-mono text-gray-800 dark:text-gray-200">
-                      Input: <span className="text-red-600 dark:text-red-400">Hello World! How are you?</span>
-                    </p>
-                    <p className="font-mono text-gray-800 dark:text-gray-200 mt-1">
-                      Output: <span className="text-green-600 dark:text-green-400">Hello%20World!%20How%20are%20you%3F</span>
-                    </p>
+      {parsed ? (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <ToolPanel title="Components">
+            {() => (
+              <dl className="divide-y">
+                {parts.map((part) => (
+                  <div key={part.id} className="group flex items-start gap-3 px-3 py-2">
+                    <dt className="w-20 shrink-0 pt-0.5 text-xs text-muted-foreground">{part.label}</dt>
+                    <dd className="flex min-w-0 flex-1 items-start gap-2">
+                      <span className="min-w-0 flex-1 font-mono text-[13px] break-all">{part.value}</span>
+                      <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <CopyButton value={part.value} label={`Copy ${part.label.toLowerCase()}`} iconOnly />
+                      </span>
+                    </dd>
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-300 dark:border-gray-600">
-                    <strong>Common encodings:</strong> Space→%20, !→%21, ?→%3F, &→%26, =→%3D
-                  </div>
-                </div>
-              </div>
-            </div>
+                ))}
+              </dl>
+            )}
+          </ToolPanel>
 
-            {/* Decode Section */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">🔓 URL Decoder</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Convert percent-encoded URLs back to human-readable format.
-              </p>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="font-mono text-gray-800 dark:text-gray-200">
-                      Input: <span className="text-blue-600 dark:text-blue-400">user%40example.com%2Fprofile%3Fid%3D123</span>
-                    </p>
-                    <p className="font-mono text-gray-800 dark:text-gray-200 mt-1">
-                      Output: <span className="text-purple-600 dark:text-purple-400">user@example.com/profile?id=123</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Use Cases */}
-            <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">💡 Common Use Cases</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">🔧 API Development</div>
-                  <div className="text-blue-700 dark:text-blue-300 text-xs">Encode query parameters with special characters</div>
-                </div>
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="font-medium text-green-900 dark:text-green-100 mb-1">🐛 Debugging</div>
-                  <div className="text-green-700 dark:text-green-300 text-xs">Parse complex URLs to understand structure</div>
-                </div>
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">🔐 Security Analysis</div>
-                  <div className="text-purple-700 dark:text-purple-300 text-xs">Decode obfuscated URLs to see content</div>
-                </div>
-                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="font-medium text-orange-900 dark:text-orange-100 mb-1">🌐 Web Development</div>
-                  <div className="text-orange-700 dark:text-orange-300 text-xs">Validate and extract URL components</div>
-                </div>
-              </div>
-            </div>
+          <ToolPanel
+            title={`Query parameters (${rows.filter((r) => r.key).length})`}
+            actions={
+              <Button variant="ghost" size="xs" onClick={() => setRows([...rows, { key: '', value: '' }])}>
+                <Plus /> Add
+              </Button>
+            }
+          >
+            {() =>
+              rows.length === 0 ? (
+                <p className="px-3 py-6 text-center text-sm text-muted-foreground">No query parameters.</p>
+              ) : (
+                <ul className="space-y-2 p-3">
+                  {rows.map((row, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <Input
+                        aria-label={`Parameter ${i + 1} name`}
+                        value={row.key}
+                        placeholder="key"
+                        onChange={(e) => updateRows(rows.map((r, j) => (j === i ? { ...r, key: e.target.value } : r)))}
+                        className="w-2/5 font-mono text-[13px]"
+                        spellCheck={false}
+                      />
+                      <span className="text-muted-foreground">=</span>
+                      <Input
+                        aria-label={`Parameter ${i + 1} value`}
+                        value={row.value}
+                        placeholder="value"
+                        onChange={(e) => updateRows(rows.map((r, j) => (j === i ? { ...r, value: e.target.value } : r)))}
+                        className="flex-1 font-mono text-[13px]"
+                        spellCheck={false}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove parameter ${row.key || i + 1}`}
+                        onClick={() => updateRows(rows.filter((_, j) => j !== i))}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+          </ToolPanel>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center">
+          <Link2 className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Components and an editable query-string table appear here.</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setUrlText(EXAMPLE)}>
+              <FlaskConical /> Try an example
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/encoding?scheme=url">
+                Encode or decode text <ArrowUpRight />
+              </Link>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
-    </>
+      )}
+    </ToolPage>
   )
 }

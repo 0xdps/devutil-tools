@@ -1,632 +1,487 @@
-import { useState } from 'react'
-import { v1 as uuidv1, v4 as uuidv4, v5 as uuidv5 } from 'uuid'
-import toast from 'react-hot-toast'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { useIncomingInput } from '@/components/tool/tool-actions'
+import { ToolPanel } from '@/components/tool/ToolPanel'
+import { CopyButton } from '@/components/tool/CopyButton'
+import { StatusPill, type StatusTone } from '@/components/tool/StatusPill'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useTabParam } from '@/hooks/use-tab-param'
+import { formatRelative } from '@/lib/jwt'
+import {
+  CHARSETS,
+  UUID_NAMESPACES,
+  formatUuid,
+  generatePassword,
+  generateUuids,
+  inspectUuid,
+  lorem,
+  passwordEntropy,
+  randomHex,
+  randomInts,
+  type CharsetName,
+  type LoremUnit,
+  type UuidVersion,
+} from '@/lib/random'
 
-export default function GeneratorToolkit() {
-  const meta = toolsMetadata.generators
-  const [activeTab, setActiveTab] = useState<'uuid' | 'random' | 'lorem'>('uuid')
-  
-  // UUID States
-  const [uuidType, setUuidType] = useState<'v1' | 'v4' | 'v5'>('v4')
-  const [uuidCount, setUuidCount] = useState(1)
-  const [uuidNamespace] = useState('6ba7b810-9dad-11d1-80b4-00c04fd430c8') // DNS namespace
-  const [uuidName, setUuidName] = useState('example.com')
-  const [generatedUuids, setGeneratedUuids] = useState<string[]>([])
-  
-  // Random States
-  const [randomType, setRandomType] = useState<'string' | 'number' | 'hex'>('string')
-  const [randomLength, setRandomLength] = useState(16)
-  const [randomMin, setRandomMin] = useState(0)
-  const [randomMax, setRandomMax] = useState(100)
-  const [randomIncludeUppercase, setRandomIncludeUppercase] = useState(true)
-  const [randomIncludeLowercase, setRandomIncludeLowercase] = useState(true)
-  const [randomIncludeNumbers, setRandomIncludeNumbers] = useState(true)
-  const [randomIncludeSymbols, setRandomIncludeSymbols] = useState(true)
-  const [generatedRandom, setGeneratedRandom] = useState('')
-  
-  // Lorem States
-  const [loremType, setLoremType] = useState<'paragraphs' | 'sentences' | 'words'>('paragraphs')
-  const [loremCount, setLoremCount] = useState(3)
-  const [generatedLorem, setGeneratedLorem] = useState('')
+const TABS = ['uuid', 'password', 'random', 'lorem'] as const
 
-  const uuidInfo = {
-    v1: 'Time-based UUID. Includes timestamp and MAC address. Good for database keys.',
-    v4: 'Random UUID. Most common. 122 random bits. Secure and collision-resistant.',
-    v5: 'Name-based UUID using SHA-1. Same input always generates same UUID. Reproducible.'
-  }
-
-  const randomInfo = {
-    string: 'Customizable random string with character type selection. Perfect for passwords, tokens, and secure keys with symbols.',
-    number: 'Random integer within specified range. Uses Math.random().',
-    hex: 'Hexadecimal string using cryptographically secure random bytes. Great for API keys and tokens.'
-  }
-
-  const loremInfo = {
-    paragraphs: 'Generate full paragraphs with multiple sentences. Good for content mockups.',
-    sentences: 'Generate individual sentences. Perfect for short text placeholders.',
-    words: 'Generate random words. Useful for testing word wrapping and layouts.'
-  }
-
-  // UUID Generator
-  const generateUuid = () => {
-    const uuids: string[] = []
-    for (let i = 0; i < uuidCount; i++) {
-      let uuid = ''
-      switch (uuidType) {
-        case 'v1':
-          uuid = uuidv1()
-          break
-        case 'v4':
-          uuid = uuidv4()
-          break
-        case 'v5':
-          uuid = uuidv5(uuidName, uuidNamespace)
-          break
-      }
-      uuids.push(uuid)
-    }
-    setGeneratedUuids(uuids)
-    toast.success(`Generated ${uuids.length} UUID${uuids.length > 1 ? 's' : ''}`)
-  }
-
-  // Random Generator
-  const generateRandom = () => {
-    let result = ''
-    
-    switch (randomType) {
-      case 'string': {
-        let charset = ''
-        if (randomIncludeUppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        if (randomIncludeLowercase) charset += 'abcdefghijklmnopqrstuvwxyz'
-        if (randomIncludeNumbers) charset += '0123456789'
-        if (randomIncludeSymbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?/~`'
-        
-        if (!charset) {
-          toast.error('Please select at least one character type')
-          return
-        }
-        
-        const array = new Uint32Array(randomLength)
-        crypto.getRandomValues(array)
-        for (let i = 0; i < randomLength; i++) {
-          result += charset[array[i] % charset.length]
-        }
-        break
-      }
-      case 'number': {
-        const num = Math.floor(Math.random() * (randomMax - randomMin + 1)) + randomMin
-        result = num.toString()
-        break
-      }
-      case 'hex': {
-        const hexArray = new Uint8Array(randomLength)
-        crypto.getRandomValues(hexArray)
-        result = Array.from(hexArray)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')
-        break
-      }
-    }
-    
-    setGeneratedRandom(result)
-    toast.success('Random value generated')
-  }
-
-  // Lorem Ipsum Generator
-  const loremWords = [
-    'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit',
-    'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
-    'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud',
-    'exercitation', 'ullamco', 'laboris', 'nisi', 'aliquip', 'ex', 'ea', 'commodo',
-    'consequat', 'duis', 'aute', 'irure', 'in', 'reprehenderit', 'voluptate',
-    'velit', 'esse', 'cillum', 'fugiat', 'nulla', 'pariatur', 'excepteur', 'sint',
-    'occaecat', 'cupidatat', 'non', 'proident', 'sunt', 'culpa', 'qui', 'officia',
-    'deserunt', 'mollit', 'anim', 'id', 'est', 'laborum'
-  ]
-
-  const generateLoremSentence = () => {
-    const length = Math.floor(Math.random() * 10) + 5
-    const words = []
-    for (let i = 0; i < length; i++) {
-      words.push(loremWords[Math.floor(Math.random() * loremWords.length)])
-    }
-    return words.join(' ').charAt(0).toUpperCase() + words.join(' ').slice(1) + '.'
-  }
-
-  const generateLoremParagraph = () => {
-    const sentenceCount = Math.floor(Math.random() * 4) + 3
-    const sentences = []
-    for (let i = 0; i < sentenceCount; i++) {
-      sentences.push(generateLoremSentence())
-    }
-    return sentences.join(' ')
-  }
-
-  const generateLorem = () => {
-    let result = ''
-    
-    switch (loremType) {
-      case 'paragraphs': {
-        const paragraphs = []
-        for (let i = 0; i < loremCount; i++) {
-          paragraphs.push(generateLoremParagraph())
-        }
-        result = paragraphs.join('\n\n')
-        break
-      }
-      case 'sentences': {
-        const sentences = []
-        for (let i = 0; i < loremCount; i++) {
-          sentences.push(generateLoremSentence())
-        }
-        result = sentences.join(' ')
-        break
-      }
-      case 'words': {
-        const words = []
-        for (let i = 0; i < loremCount; i++) {
-          words.push(loremWords[Math.floor(Math.random() * loremWords.length)])
-        }
-        result = words.join(' ')
-        break
-      }
-    }
-    
-    setGeneratedLorem(result)
-    toast.success('Lorem ipsum generated')
-  }
-
-  const copyToClipboard = async (text: string) => {
+/** Runs `generate` now and whenever its inputs change; `regenerate` re-rolls. */
+function useGenerated<T>(generate: () => T, deps: unknown[]): { value: T | null; error: string; regenerate: () => void } {
+  const [state, setState] = useState<{ value: T | null; error: string }>({ value: null, error: '' })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const run = useCallback(generate, deps)
+  const regenerate = useCallback(() => {
     try {
-      await navigator.clipboard.writeText(text)
-      toast.success('Copied to clipboard!')
-    } catch {
-      toast.error('Failed to copy to clipboard')
+      setState({ value: run(), error: '' })
+    } catch (e) {
+      setState({ value: null, error: e instanceof Error ? e.message : String(e) })
     }
-  }
+  }, [run])
+  useEffect(regenerate, [regenerate])
+  return { ...state, regenerate }
+}
+
+function Field({ label, htmlFor, children, className }: { label: string; htmlFor?: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={className}>
+      <Label htmlFor={htmlFor} className="mb-1.5 text-xs text-muted-foreground">
+        {label}
+      </Label>
+      {children}
+    </div>
+  )
+}
+
+function clampInt(value: string, min: number, max: number, fallback: number) {
+  const n = Math.floor(Number(value))
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback
+}
+
+function OutputList({
+  title,
+  items,
+  error,
+  onRegenerate,
+  mono = true,
+}: {
+  title: string
+  items: string[]
+  error: string
+  onRegenerate: () => void
+  mono?: boolean
+}) {
+  return (
+    <ToolPanel
+      title={title}
+      actions={
+        <>
+          <Button variant="ghost" size="xs" onClick={onRegenerate}>
+            <RefreshCw /> Regenerate
+          </Button>
+          {items.length > 1 && <CopyButton value={items.join('\n')} label="Copy all" toolName="generators" />}
+        </>
+      }
+      footer={items.length > 1 ? `${items.length} items` : undefined}
+    >
+      {() =>
+        error ? (
+          <p role="alert" className="px-3 py-4 text-sm text-destructive">
+            {error}
+          </p>
+        ) : items.length > 1 && items.every((i) => i.length <= 12) ? (
+          // Short values (numbers): compact chips instead of one tall row each
+          <ul tabIndex={0} aria-label={title} className="flex max-h-[28rem] flex-wrap gap-1.5 overflow-auto bg-code p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50" aria-live="polite">
+            {items.map((item, i) => (
+              <li key={`${i}-${item}`} className="rounded-md border bg-background px-2 py-0.5 font-mono text-[13px] tabular-nums">
+                {item}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul tabIndex={0} aria-label={title} className="max-h-[28rem] divide-y overflow-auto bg-code outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50" aria-live="polite">
+            {items.map((item, i) => (
+              <li key={`${i}-${item}`} className="group flex items-start gap-2 px-3 py-2">
+                <span className={mono ? 'min-w-0 flex-1 font-mono text-[13px] break-all' : 'min-w-0 flex-1 text-sm whitespace-pre-wrap'}>
+                  {item}
+                </span>
+                {items.length > 1 ? (
+                  <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <CopyButton value={item} label="Copy" iconOnly toolName="generators" />
+                  </span>
+                ) : (
+                  <CopyButton value={item} toolName="generators" />
+                )}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </ToolPanel>
+  )
+}
+
+// ── UUID ────────────────────────────────────────────────────────────
+
+const UUID_VERSIONS: { value: UuidVersion; label: string; hint: string }[] = [
+  { value: 'v4', label: 'v4', hint: 'Random. The default choice for IDs.' },
+  { value: 'v7', label: 'v7', hint: 'Time-ordered + random. Sorts by creation time, ideal for database keys.' },
+  { value: 'v1', label: 'v1', hint: 'Legacy time-based. Prefer v7 for new systems.' },
+  { value: 'v5', label: 'v5', hint: 'Name-based (SHA-1). The same namespace and name always give the same UUID.' },
+]
+
+function UuidInspector() {
+  const [value, setValue] = useState('')
+  useIncomingInput<{ inspect: string }>((v) => typeof v.inspect === 'string' && setValue(v.inspect))
+  const info = useMemo(() => {
+    if (!value.trim()) return null
+    try {
+      return { ok: inspectUuid(value) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [value])
 
   return (
-    <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
+    <div className="space-y-2 rounded-xl border bg-card p-4 shadow-xs">
+      <Label htmlFor="uuid-inspect">Inspect a UUID</Label>
+      <Input
+        id="uuid-inspect"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Paste a UUID to see its version and embedded time"
+        className="font-mono text-[13px]"
+        spellCheck={false}
       />
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Generator Toolkit
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Generate UUIDs, secure passwords, random values, and Lorem Ipsum text
-          </p>
-        </div>
-
-      {/* Tab Navigation */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('uuid')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'uuid'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            🆔 UUID Generator
-          </button>
-          <button
-            onClick={() => setActiveTab('random')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'random'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            🎲 Random Generator
-          </button>
-          <button
-            onClick={() => setActiveTab('lorem')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'lorem'
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            📝 Lorem Ipsum
-          </button>
-        </nav>
-      </div>
-
-      {/* UUID Generator Tab */}
-      {activeTab === 'uuid' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">UUID Generator</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  UUID Version
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={uuidType === 'v1'}
-                      onChange={() => setUuidType('v1')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">v1 (Timestamp)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={uuidType === 'v4'}
-                      onChange={() => setUuidType('v4')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">v4 (Random)</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={uuidType === 'v5'}
-                      onChange={() => setUuidType('v5')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">v5 (Name-based)</span>
-                  </label>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    ℹ️ {uuidInfo[uuidType]}
-                  </p>
-                </div>
-              </div>
-
-              {uuidType === 'v5' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Name for v5 UUID
-                  </label>
-                  <input
-                    type="text"
-                    value={uuidName}
-                    onChange={(e) => setUuidName(e.target.value)}
-                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    placeholder="example.com"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Number of UUIDs: {uuidCount}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={uuidCount}
-                  onChange={(e) => setUuidCount(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <button
-                onClick={generateUuid}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Generate UUID{uuidCount > 1 ? 's' : ''}
-              </button>
-            </div>
-          </div>
-
-          {generatedUuids.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Generated UUIDs</h3>
-                <button
-                  onClick={() => copyToClipboard(generatedUuids.join('\n'))}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-                >
-                  📋 Copy All
-                </button>
-              </div>
-              <div className="space-y-2">
-                {generatedUuids.map((uuid, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded font-mono text-sm">
-                    <span className="text-gray-900 dark:text-white">{uuid}</span>
-                    <button
-                      onClick={() => copyToClipboard(uuid)}
-                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                    >
-                      📋
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Random Generator Tab */}
-      {activeTab === 'random' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Random Generator</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Type
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={randomType === 'string'}
-                      onChange={() => setRandomType('string')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">String</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={randomType === 'number'}
-                      onChange={() => setRandomType('number')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Number</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={randomType === 'hex'}
-                      onChange={() => setRandomType('hex')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Hex</span>
-                  </label>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    ℹ️ {randomInfo[randomType]}
-                  </p>
-                </div>
-              </div>
-
-              {randomType === 'string' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Length: {randomLength}
-                    </label>
-                    <input
-                      type="range"
-                      min="8"
-                      max="128"
-                      value={randomLength}
-                      onChange={(e) => setRandomLength(Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      Character Types
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={randomIncludeUppercase}
-                          onChange={(e) => setRandomIncludeUppercase(e.target.checked)}
-                          className="mr-3 w-4 h-4"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Uppercase (A-Z)</span>
-                      </label>
-                      <label className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={randomIncludeLowercase}
-                          onChange={(e) => setRandomIncludeLowercase(e.target.checked)}
-                          className="mr-3 w-4 h-4"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Lowercase (a-z)</span>
-                      </label>
-                      <label className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={randomIncludeNumbers}
-                          onChange={(e) => setRandomIncludeNumbers(e.target.checked)}
-                          className="mr-3 w-4 h-4"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Numbers (0-9)</span>
-                      </label>
-                      <label className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={randomIncludeSymbols}
-                          onChange={(e) => setRandomIncludeSymbols(e.target.checked)}
-                          className="mr-3 w-4 h-4"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Symbols (!@#$...)</span>
-                      </label>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {randomType === 'hex' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Bytes: {randomLength}
-                  </label>
-                  <input
-                    type="range"
-                    min="8"
-                    max="64"
-                    value={randomLength}
-                    onChange={(e) => setRandomLength(Number(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-              )}
-
-              {randomType === 'number' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Min
-                    </label>
-                    <input
-                      type="number"
-                      value={randomMin}
-                      onChange={(e) => setRandomMin(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Max
-                    </label>
-                    <input
-                      type="number"
-                      value={randomMax}
-                      onChange={(e) => setRandomMax(Number(e.target.value))}
-                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={generateRandom}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Generate Random Value
-              </button>
-            </div>
-          </div>
-
-          {generatedRandom && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Generated Value</h3>
-                <button
-                  onClick={() => copyToClipboard(generatedRandom)}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-                >
-                  📋 Copy
-                </button>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded font-mono break-all">
-                <span className="text-gray-900 dark:text-white">{generatedRandom}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Lorem Ipsum Tab */}
-      {activeTab === 'lorem' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Lorem Ipsum Generator</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Generate
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={loremType === 'paragraphs'}
-                      onChange={() => setLoremType('paragraphs')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Paragraphs</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={loremType === 'sentences'}
-                      onChange={() => setLoremType('sentences')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Sentences</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={loremType === 'words'}
-                      onChange={() => setLoremType('words')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Words</span>
-                  </label>
-                </div>
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    ℹ️ {loremInfo[loremType]}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Count: {loremCount}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max={loremType === 'words' ? 100 : loremType === 'sentences' ? 20 : 10}
-                  value={loremCount}
-                  onChange={(e) => setLoremCount(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <button
-                onClick={generateLorem}
-                className="w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Generate Lorem Ipsum
-              </button>
-            </div>
-          </div>
-
-          {generatedLorem && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Generated Text</h3>
-                <button
-                  onClick={() => copyToClipboard(generatedLorem)}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-                >
-                  📋 Copy
-                </button>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded whitespace-pre-wrap">
-                <span className="text-gray-900 dark:text-white">{generatedLorem}</span>
-              </div>
-            </div>
+      {info?.error && <StatusPill tone="danger">{info.error}</StatusPill>}
+      {info?.ok && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <StatusPill tone="success">
+            {info.ok.isNil ? 'Nil UUID' : info.ok.isMax ? 'Max UUID' : `Valid · version ${info.ok.version}`}
+          </StatusPill>
+          <span className="text-muted-foreground">Variant: {info.ok.variant}</span>
+          {info.ok.timestamp && (
+            <span className="text-muted-foreground">
+              Created {info.ok.timestamp.toISOString()} ({formatRelative((info.ok.timestamp.getTime() - Date.now()) / 1000)})
+            </span>
           )}
         </div>
       )}
     </div>
-    </>
+  )
+}
+
+function UuidTab() {
+  const [version, setVersion] = useState<UuidVersion>('v4')
+  const [count, setCount] = useState(5)
+  const [uppercase, setUppercase] = useState(false)
+  const [hyphens, setHyphens] = useState(true)
+  const [braces, setBraces] = useState(false)
+  const [namespace, setNamespace] = useState<string>(UUID_NAMESPACES.DNS)
+  const [name, setName] = useState('example.com')
+
+  const { value, error, regenerate } = useGenerated(
+    () => generateUuids(version, count, { namespace, name }),
+    [version, count, namespace, name],
+  )
+  const items = (value ?? []).map((id) => formatUuid(id, { uppercase, hyphens, braces }))
+  const presetNs = Object.entries(UUID_NAMESPACES).find(([, v]) => v === namespace)?.[0] ?? 'custom'
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="space-y-4 rounded-xl border bg-card p-4 shadow-xs">
+        <Field label="Version">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={version}
+            onValueChange={(v) => v && setVersion(v as UuidVersion)}
+            aria-label="UUID version"
+          >
+            {UUID_VERSIONS.map((v) => (
+              <ToggleGroupItem key={v.value} value={v.value} className="px-3 font-mono">
+                {v.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <p className="mt-1.5 text-xs text-muted-foreground">{UUID_VERSIONS.find((v) => v.value === version)!.hint}</p>
+        </Field>
+
+        {version === 'v5' ? (
+          <>
+            <Field label="Namespace">
+              <Select value={presetNs} onValueChange={(v) => v !== 'custom' && setNamespace(UUID_NAMESPACES[v as keyof typeof UUID_NAMESPACES])}>
+                <SelectTrigger className="w-full" aria-label="Namespace">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(UUID_NAMESPACES).map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {k}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom" disabled>
+                    Custom (edit below)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Input value={namespace} onChange={(e) => setNamespace(e.target.value)} className="mt-2 font-mono text-[13px]" aria-label="Namespace UUID" spellCheck={false} />
+            </Field>
+            <Field label="Name" htmlFor="uuid-name">
+              <Input id="uuid-name" value={name} onChange={(e) => setName(e.target.value)} className="font-mono text-[13px]" spellCheck={false} />
+            </Field>
+          </>
+        ) : (
+          <Field label={`How many: ${count}`} htmlFor="uuid-count">
+            <div className="flex items-center gap-3">
+              <Slider id="uuid-count" min={1} max={100} value={[count]} onValueChange={([v]) => setCount(v)} className="flex-1" aria-label="Number of UUIDs" />
+              <Input
+                type="number"
+                min={1}
+                max={1000}
+                value={count}
+                onChange={(e) => setCount(clampInt(e.target.value, 1, 1000, 1))}
+                className="w-20"
+                aria-label="Number of UUIDs"
+              />
+            </div>
+          </Field>
+        )}
+
+        <fieldset className="space-y-2">
+          <legend className="mb-1.5 text-xs text-muted-foreground">Format</legend>
+          {(
+            [
+              { id: 'uuid-upper', label: 'Uppercase', checked: uppercase, set: setUppercase },
+              { id: 'uuid-hyphens', label: 'Hyphens', checked: hyphens, set: setHyphens },
+              { id: 'uuid-braces', label: '{Braces}', checked: braces, set: setBraces },
+            ] satisfies { id: string; label: string; checked: boolean; set: (v: boolean) => void }[]
+          ).map(({ id, label, checked, set }) => (
+            <div key={id} className="flex items-center justify-between">
+              <Label htmlFor={id} className="font-normal">
+                {label}
+              </Label>
+              <Switch id={id} checked={checked} onCheckedChange={set} />
+            </div>
+          ))}
+        </fieldset>
+      </div>
+
+      <div className="space-y-4">
+        <OutputList title={`UUID ${version}`} items={items} error={error} onRegenerate={regenerate} />
+        <UuidInspector />
+      </div>
+    </div>
+  )
+}
+
+// ── Password ────────────────────────────────────────────────────────
+
+const SET_LABELS: Record<CharsetName, string> = { lower: 'a–z', upper: 'A–Z', digits: '0–9', symbols: '!@#…' }
+
+function entropyTone(bits: number): [StatusTone, string] {
+  if (bits < 50) return ['danger', 'Weak']
+  if (bits < 80) return ['warning', 'Fair']
+  if (bits < 110) return ['success', 'Strong']
+  return ['success', 'Very strong']
+}
+
+function PasswordTab() {
+  const [length, setLength] = useState(20)
+  const [sets, setSets] = useState<CharsetName[]>(['lower', 'upper', 'digits', 'symbols'])
+  const [excludeAmbiguous, setExcludeAmbiguous] = useState(false)
+  const [count, setCount] = useState(5)
+
+  const options = { length, sets, excludeAmbiguous }
+  const { value, error, regenerate } = useGenerated(
+    () => Array.from({ length: count }, () => generatePassword(options)),
+    [length, sets.join(), excludeAmbiguous, count],
+  )
+  const bits = passwordEntropy(options)
+  const [tone, label] = entropyTone(bits)
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="space-y-4 rounded-xl border bg-card p-4 shadow-xs">
+        <Field label={`Length: ${length}`} htmlFor="pw-length">
+          <Slider id="pw-length" min={4} max={128} value={[length]} onValueChange={([v]) => setLength(v)} aria-label="Password length" />
+        </Field>
+        <fieldset>
+          <legend className="mb-1.5 text-xs text-muted-foreground">Characters</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(CHARSETS) as CharsetName[]).map((set) => (
+              <Label key={set} className="flex items-center gap-2 rounded-md border px-3 py-2 font-mono font-normal has-[:checked]:border-primary/50">
+                <Checkbox
+                  checked={sets.includes(set)}
+                  onCheckedChange={(on) => setSets(on ? [...sets, set] : sets.filter((s) => s !== set))}
+                />
+                {SET_LABELS[set]}
+              </Label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="pw-ambiguous" className="font-normal">
+            Avoid look-alikes (l 1 I O 0)
+          </Label>
+          <Switch id="pw-ambiguous" checked={excludeAmbiguous} onCheckedChange={setExcludeAmbiguous} />
+        </div>
+        <Field label="How many" htmlFor="pw-count">
+          <Input id="pw-count" type="number" min={1} max={100} value={count} onChange={(e) => setCount(clampInt(e.target.value, 1, 100, 1))} className="w-24" />
+        </Field>
+        <div className="flex items-center gap-2 border-t pt-3 text-sm">
+          <StatusPill tone={tone}>{label}</StatusPill>
+          <span className="text-muted-foreground">{bits} bits of entropy each</span>
+        </div>
+      </div>
+      <OutputList title="Passwords" items={value ?? []} error={error} onRegenerate={regenerate} />
+    </div>
+  )
+}
+
+// ── Random numbers & bytes ─────────────────────────────────────────
+
+function RandomTab() {
+  const [min, setMin] = useState('1')
+  const [max, setMax] = useState('100')
+  const [count, setCount] = useState(10)
+  const [unique, setUnique] = useState(false)
+  const [bytes, setBytes] = useState(32)
+
+  const numbers = useGenerated(() => randomInts(Number(min), Number(max), count, unique).map(String), [min, max, count, unique])
+  const hex = useGenerated(() => [randomHex(bytes)], [bytes])
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border bg-card p-4 shadow-xs sm:grid-cols-4">
+          <Field label="Min" htmlFor="rnd-min">
+            <Input id="rnd-min" type="number" value={min} onChange={(e) => setMin(e.target.value)} />
+          </Field>
+          <Field label="Max" htmlFor="rnd-max">
+            <Input id="rnd-max" type="number" value={max} onChange={(e) => setMax(e.target.value)} />
+          </Field>
+          <Field label="Count" htmlFor="rnd-count">
+            <Input id="rnd-count" type="number" min={1} max={1000} value={count} onChange={(e) => setCount(clampInt(e.target.value, 1, 1000, 1))} />
+          </Field>
+          <div className="flex items-end pb-2">
+            <Label className="flex items-center gap-2 font-normal">
+              <Switch checked={unique} onCheckedChange={setUnique} /> Unique
+            </Label>
+          </div>
+        </div>
+        <OutputList title="Random integers" items={numbers.value ?? []} error={numbers.error} onRegenerate={numbers.regenerate} />
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-xl border bg-card p-4 shadow-xs">
+          <Field label={`Random bytes: ${bytes} (${bytes * 8} bits)`} htmlFor="hex-bytes">
+            <Slider id="hex-bytes" min={4} max={128} step={4} value={[bytes]} onValueChange={([v]) => setBytes(v)} aria-label="Number of bytes" />
+          </Field>
+        </div>
+        <OutputList title="Hex string (API keys, secrets)" items={hex.value ?? []} error={hex.error} onRegenerate={hex.regenerate} />
+      </div>
+    </div>
+  )
+}
+
+// ── Lorem ipsum ─────────────────────────────────────────────────────
+
+function LoremTab() {
+  const [unit, setUnit] = useState<LoremUnit>('paragraphs')
+  const [count, setCount] = useState(3)
+  const [classic, setClassic] = useState(true)
+  const { value, regenerate } = useGenerated(() => lorem(unit, count, classic), [unit, count, classic])
+  const text = value ?? ''
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-4 rounded-xl border bg-card p-4 shadow-xs">
+        <Field label="Unit">
+          <ToggleGroup type="single" variant="outline" size="sm" value={unit} onValueChange={(v) => v && setUnit(v as LoremUnit)} aria-label="Unit">
+            <ToggleGroupItem value="paragraphs" className="px-3">
+              Paragraphs
+            </ToggleGroupItem>
+            <ToggleGroupItem value="sentences" className="px-3">
+              Sentences
+            </ToggleGroupItem>
+            <ToggleGroupItem value="words" className="px-3">
+              Words
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </Field>
+        <Field label="Count" htmlFor="lorem-count">
+          <Input id="lorem-count" type="number" min={1} max={500} value={count} onChange={(e) => setCount(clampInt(e.target.value, 1, 500, 1))} className="w-24" />
+        </Field>
+        <Label className="flex items-center gap-2 pb-2 font-normal">
+          <Switch checked={classic} onCheckedChange={setClassic} /> Start with “Lorem ipsum”
+        </Label>
+      </div>
+      <ToolPanel
+        title="Placeholder text"
+        actions={
+          <>
+            <Button variant="ghost" size="xs" onClick={regenerate}>
+              <RefreshCw /> Regenerate
+            </Button>
+            <CopyButton value={text} toolName="generators" />
+          </>
+        }
+        footer={`${text.split(/\s+/).filter(Boolean).length} words · ${text.length} characters`}
+      >
+        {() => <div tabIndex={0} role="region" aria-label="Placeholder text" className="max-h-[32rem] space-y-3 overflow-auto bg-code px-4 py-3 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50">{text.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}</div>}
+      </ToolPanel>
+    </div>
+  )
+}
+
+// ── Page ────────────────────────────────────────────────────────────
+
+export default function GeneratorToolkit() {
+  const [tab, setTab] = useTabParam(TABS)
+
+  return (
+    <ToolPage
+      toolId="generators"
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Everything is generated with the Web Crypto API (crypto.getRandomValues), with no modulo bias.</li>
+          <li>
+            UUID v7 embeds a millisecond timestamp, so IDs sort by creation time and index well in databases. v4 is fully
+            random.
+          </li>
+          <li>Password strength here is the exact entropy of a random password with these settings.</li>
+        </ul>
+      }
+    >
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="uuid">UUID</TabsTrigger>
+          <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="random">Numbers & hex</TabsTrigger>
+          <TabsTrigger value="lorem">Lorem ipsum</TabsTrigger>
+        </TabsList>
+        <TabsContent value="uuid" className="mt-4">
+          <UuidTab />
+        </TabsContent>
+        <TabsContent value="password" className="mt-4">
+          <PasswordTab />
+        </TabsContent>
+        <TabsContent value="random" className="mt-4">
+          <RandomTab />
+        </TabsContent>
+        <TabsContent value="lorem" className="mt-4">
+          <LoremTab />
+        </TabsContent>
+      </Tabs>
+    </ToolPage>
   )
 }

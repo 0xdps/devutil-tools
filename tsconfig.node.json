@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
-        "composite": true,
+        "noEmit": true,
+        "types": ["node"],
         "skipLibCheck": true,
         "module": "ESNext",
         "moduleResolution": "bundler",
@@ -8,6 +9,9 @@
         "strict": true
     },
     "include": [
-        "vite.config.ts"
+        "vite.config.ts",
+        "vite-plugins/**/*.ts",
+        "src/tools/catalog.ts",
+        "src/tools/seo-head.ts"
     ]
 }

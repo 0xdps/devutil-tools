@@ -1,466 +1,248 @@
-import { useState, useRef, useEffect } from 'react'
-import { diffLines, type Change } from 'diff'
-import toast from 'react-hot-toast'
-import SEO from '../components/SEO'
-import { toolsMetadata } from '../config/seoConfig'
+import { useDeferredValue, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { createTwoFilesPatch, diffLines } from 'diff'
+import { ArrowDown, ArrowLeftRight, ArrowUp, Eraser, FileUp, FlaskConical } from 'lucide-react'
+import { toast } from 'sonner'
+import { ToolPage } from '@/components/tool/ToolPage'
+import { useShareState, useToolOutput } from '@/components/tool/tool-actions'
+import { DiffEditor, type DiffEditorHandle } from '@/components/tool/DiffEditor'
+import { DownloadButton } from '@/components/tool/DownloadButton'
+import { StatusPill } from '@/components/tool/StatusPill'
+import type { EditorLanguage } from '@/components/tool/code-editor-setup'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { formatBytes } from '@/lib/format'
 
-type DiffMode = 'side-by-side' | 'inline'
+const MAX_FILE = 5 * 1024 * 1024
 
-export default function CodeDiff() {
-  const meta = toolsMetadata.codeDiff
-  const [leftText, setLeftText] = useState('')
-  const [rightText, setRightText] = useState('')
-  const [leftFileName, setLeftFileName] = useState('')
-  const [rightFileName, setRightFileName] = useState('')
-  const [diffResult, setDiffResult] = useState<Change[]>([])
-  const [mode, setMode] = useState<DiffMode>('side-by-side')
-  const leftFileInputRef = useRef<HTMLInputElement>(null)
-  const rightFileInputRef = useRef<HTMLInputElement>(null)
-  const leftScrollRef = useRef<HTMLDivElement>(null)
-  const rightScrollRef = useRef<HTMLDivElement>(null)
-  const isScrollingRef = useRef(false)
+const LANGUAGES: { value: EditorLanguage; label: string }[] = [
+  { value: 'text', label: 'Plain text' },
+  { value: 'json', label: 'JSON' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'html', label: 'HTML' },
+  { value: 'css', label: 'CSS' },
+  { value: 'yaml', label: 'YAML' },
+  { value: 'xml', label: 'XML' },
+  { value: 'markdown', label: 'Markdown' },
+]
 
-  const handleFileUpload = async (
-    file: File,
-    setText: (text: string) => void,
-    setFileName: (name: string) => void
-  ) => {
+const EXT_LANGUAGE: Record<string, EditorLanguage> = {
+  json: 'json', js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
+  html: 'html', htm: 'html', css: 'css', scss: 'css', yml: 'yaml', yaml: 'yaml', xml: 'xml', svg: 'xml', md: 'markdown',
+}
+
+const EXAMPLE_A = `{
+  "name": "localplus",
+  "version": "1.4.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-hot-toast": "^2.4.1"
+  }
+}`
+const EXAMPLE_B = `{
+  "name": "localplus",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^19.2.5",
+    "sonner": "^2.0.8"
+  }
+}`
+
+function FileButton({ label, onLoad }: { label: string; onLoad: (text: string, name: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const onChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
     if (!file) return
-
-    // Check file size (limit to 5MB for text files)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB')
+    if (file.size > MAX_FILE) {
+      toast.error(`${file.name} is ${formatBytes(file.size)}; the limit is 5 MB.`)
       return
     }
-
-    try {
-      const text = await file.text()
-      setText(text)
-      setFileName(file.name)
-      toast.success(`File "${file.name}" loaded`)
-    } catch (error) {
-      toast.error('Failed to read file. Please ensure it is a text file.')
-    }
+    onLoad(await file.text(), file.name)
   }
-
-  const handleLeftFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      handleFileUpload(file, setLeftText, setLeftFileName)
-    }
-    // Reset input so same file can be selected again
-    if (leftFileInputRef.current) {
-      leftFileInputRef.current.value = ''
-    }
-  }
-
-  const handleRightFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      handleFileUpload(file, setRightText, setRightFileName)
-    }
-    // Reset input so same file can be selected again
-    if (rightFileInputRef.current) {
-      rightFileInputRef.current.value = ''
-    }
-  }
-
-  const compare = () => {
-    if (!leftText.trim() && !rightText.trim()) {
-      toast.error('Please enter text or upload files to compare')
-      return
-    }
-
-    const changes = diffLines(leftText, rightText)
-    setDiffResult(changes)
-    toast.success('Diff generated')
-  }
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      toast.success('Copied to clipboard')
-    } catch {
-      toast.error('Copy failed')
-    }
-  }
-
-  const exportDiff = () => {
-    const diffText = diffResult
-      .map((change) => {
-        const prefix = change.added ? '+' : change.removed ? '-' : ' '
-        return change.value
-          .split('\n')
-          .filter((line) => line.trim() !== '')
-          .map((line) => `${prefix} ${line}`)
-          .join('\n')
-      })
-      .join('\n')
-
-    const blob = new Blob([diffText], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'diff.txt'
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success('Diff exported')
-  }
-
-  // Synchronized scrolling effect
-  useEffect(() => {
-    if (mode !== 'side-by-side' || !leftScrollRef.current || !rightScrollRef.current) {
-      return
-    }
-
-    const leftScroll = leftScrollRef.current
-    const rightScroll = rightScrollRef.current
-
-    const handleLeftScroll = () => {
-      if (!isScrollingRef.current) {
-        isScrollingRef.current = true
-        rightScroll.scrollTop = leftScroll.scrollTop
-        requestAnimationFrame(() => {
-          isScrollingRef.current = false
-        })
-      }
-    }
-
-    const handleRightScroll = () => {
-      if (!isScrollingRef.current) {
-        isScrollingRef.current = true
-        leftScroll.scrollTop = rightScroll.scrollTop
-        requestAnimationFrame(() => {
-          isScrollingRef.current = false
-        })
-      }
-    }
-
-    leftScroll.addEventListener('scroll', handleLeftScroll)
-    rightScroll.addEventListener('scroll', handleRightScroll)
-
-    return () => {
-      leftScroll.removeEventListener('scroll', handleLeftScroll)
-      rightScroll.removeEventListener('scroll', handleRightScroll)
-    }
-  }, [mode, diffResult])
-
-  const renderSideBySide = () => {
-    const leftLines: Array<{ line: string; type: 'added' | 'removed' | 'unchanged' }> = []
-    const rightLines: Array<{ line: string; type: 'added' | 'removed' | 'unchanged' }> = []
-
-    diffResult.forEach((change) => {
-      const lines = change.value.split('\n')
-      // Remove the last empty line if it exists
-      if (lines[lines.length - 1] === '') {
-        lines.pop()
-      }
-
-      lines.forEach((line) => {
-        if (change.removed) {
-          leftLines.push({ line, type: 'removed' })
-          rightLines.push({ line: '', type: 'unchanged' })
-        } else if (change.added) {
-          leftLines.push({ line: '', type: 'unchanged' })
-          rightLines.push({ line, type: 'added' })
-        } else {
-          leftLines.push({ line, type: 'unchanged' })
-          rightLines.push({ line, type: 'unchanged' })
-        }
-      })
-    })
-
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700 font-semibold text-sm">
-            Original
-          </div>
-          <div 
-            ref={leftScrollRef}
-            className="overflow-auto max-h-[600px] font-mono text-sm"
-          >
-            {leftLines.length === 0 ? (
-              <div className="p-4 text-gray-500 dark:text-gray-400">No changes to display</div>
-            ) : (
-              leftLines.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`px-4 py-1 ${
-                    item.type === 'removed'
-                      ? 'bg-red-100 dark:bg-red-900/20'
-                      : 'bg-white dark:bg-gray-900'
-                  }`}
-                >
-                  <span className="text-gray-500 dark:text-gray-500 mr-2 select-none">
-                    {idx + 1}
-                  </span>
-                  <span
-                    className={
-                      item.type === 'removed'
-                        ? 'text-red-800 dark:text-red-300 line-through'
-                        : 'text-gray-900 dark:text-gray-100'
-                    }
-                  >
-                    {item.line || '\u00A0'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700 font-semibold text-sm">
-            Modified
-          </div>
-          <div 
-            ref={rightScrollRef}
-            className="overflow-auto max-h-[600px] font-mono text-sm"
-          >
-            {rightLines.length === 0 ? (
-              <div className="p-4 text-gray-500 dark:text-gray-400">No changes to display</div>
-            ) : (
-              rightLines.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`px-4 py-1 ${
-                    item.type === 'added'
-                      ? 'bg-green-100 dark:bg-green-900/20'
-                      : 'bg-white dark:bg-gray-900'
-                  }`}
-                >
-                  <span className="text-gray-500 dark:text-gray-500 mr-2 select-none">
-                    {idx + 1}
-                  </span>
-                  <span
-                    className={
-                      item.type === 'added'
-                        ? 'text-green-800 dark:text-green-300'
-                        : 'text-gray-900 dark:text-gray-100'
-                    }
-                  >
-                    {item.line || '\u00A0'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const renderInline = () => {
-    return (
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700 font-semibold text-sm">
-          Inline Diff
-        </div>
-        <div className="overflow-auto max-h-[600px] font-mono text-sm bg-white dark:bg-gray-900">
-          {diffResult.length === 0 ? (
-            <div className="p-4 text-gray-500 dark:text-gray-400">No changes to display</div>
-          ) : (
-            diffResult.map((change, idx) => (
-              <div
-                key={idx}
-                className={`px-4 py-1 ${
-                  change.added
-                    ? 'bg-green-100 dark:bg-green-900/20'
-                    : change.removed
-                      ? 'bg-red-100 dark:bg-red-900/20'
-                      : 'bg-white dark:bg-gray-900'
-                }`}
-              >
-                <span
-                  className={
-                    change.added
-                      ? 'text-green-800 dark:text-green-300'
-                      : change.removed
-                        ? 'text-red-800 dark:text-red-300'
-                        : 'text-gray-900 dark:text-gray-100'
-                  }
-                >
-                  {change.value}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
-      <SEO
-        title={meta.title}
-        description={meta.description}
-        keywords={meta.keywords}
-        canonical={meta.canonical}
-        toolName={meta.toolName}
-        toolDescription={meta.toolDescription}
-        toolUrl={meta.canonical}
-      />
-      <div className="max-w-7xl mx-auto space-y-6">
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Text Diff</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Compare text files or snippets side-by-side or inline with line-by-line change detection. Upload files or paste text directly.
-          </p>
-        </header>
+      <Button variant="ghost" size="xs" onClick={() => inputRef.current?.click()}>
+        <FileUp /> {label}
+      </Button>
+      <input ref={inputRef} type="file" className="sr-only" tabIndex={-1} aria-hidden onChange={onChange} />
+    </>
+  )
+}
 
-        {/* Mode Selection */}
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Mode:</span>
-          <button
-            onClick={() => setMode('side-by-side')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              mode === 'side-by-side'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Side-by-Side
-          </button>
-          <button
-            onClick={() => setMode('inline')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              mode === 'inline'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Inline
-          </button>
-        </div>
+export default function CodeDiff() {
+  const [original, setOriginal] = useState('')
+  const [modified, setModified] = useState('')
+  const [names, setNames] = useState({ a: 'original', b: 'modified' })
+  // Two columns are too narrow on phones; start unified there.
+  const [mode, setMode] = useState<'split' | 'unified'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches ? 'unified' : 'split',
+  )
+  const [language, setLanguage] = useState<EditorLanguage>('text')
+  const [collapse, setCollapse] = useState(false)
+  const editorRef = useRef<DiffEditorHandle>(null)
+  const a = useDeferredValue(original)
+  const b = useDeferredValue(modified)
 
-        {/* Input Section */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Original</h2>
-              <div className="flex gap-2">
-                <label className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-                  <input
-                    ref={leftFileInputRef}
-                    type="file"
-                    accept=".txt,.json,.js,.ts,.jsx,.tsx,.html,.css,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.yml,.yaml,.xml,.csv,.log"
-                    onChange={handleLeftFileChange}
-                    className="hidden"
-                  />
-                  📁 Upload
-                </label>
-                <button
-                  onClick={() => copyToClipboard(leftText)}
-                  className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            {leftFileName && (
-              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span>📄 {leftFileName}</span>
-                <button
-                  onClick={() => {
-                    setLeftFileName('')
-                    setLeftText('')
-                  }}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            <textarea
-              value={leftText}
-              onChange={(e) => setLeftText(e.target.value)}
-              className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Paste original text here or upload a file..."
-            />
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Modified</h2>
-              <div className="flex gap-2">
-                <label className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-                  <input
-                    ref={rightFileInputRef}
-                    type="file"
-                    accept=".txt,.json,.js,.ts,.jsx,.tsx,.html,.css,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.yml,.yaml,.xml,.csv,.log"
-                    onChange={handleRightFileChange}
-                    className="hidden"
-                  />
-                  📁 Upload
-                </label>
-                <button
-                  onClick={() => copyToClipboard(rightText)}
-                  className="px-3 py-1 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            {rightFileName && (
-              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span>📄 {rightFileName}</span>
-                <button
-                  onClick={() => {
-                    setRightFileName('')
-                    setRightText('')
-                  }}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            <textarea
-              value={rightText}
-              onChange={(e) => setRightText(e.target.value)}
-              className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Paste modified text here or upload a file..."
-            />
-          </div>
-        </div>
+  const stats = useMemo(() => {
+    let added = 0
+    let removed = 0
+    for (const part of diffLines(a, b)) {
+      if (part.added) added += part.count ?? 0
+      if (part.removed) removed += part.count ?? 0
+    }
+    return { added, removed }
+  }, [a, b])
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={compare}
-            className="px-6 py-3 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
-          >
-            Compare
-          </button>
-          <button
-            onClick={() => {
-              setLeftText('')
-              setRightText('')
-              setLeftFileName('')
-              setRightFileName('')
-              setDiffResult([])
-            }}
-            className="px-6 py-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            Clear
-          </button>
-          {diffResult.length > 0 && (
-            <button
-              onClick={exportDiff}
-              className="px-6 py-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Export Diff
-            </button>
+  const patch = useMemo(() => (stats.added || stats.removed ? createTwoFilesPatch(names.a, names.b, a, b) : ''), [a, b, names, stats])
+
+  useToolOutput(patch)
+  useShareState({ original, modified, language, names }, (s) => {
+    setOriginal(String(s.original ?? ''))
+    setModified(String(s.modified ?? ''))
+    if (LANGUAGES.some((l) => l.value === s.language)) setLanguage(s.language)
+    if (s.names && typeof s.names.a === 'string' && typeof s.names.b === 'string') setNames(s.names)
+  })
+
+  const load = (side: 'a' | 'b') => (text: string, name: string) => {
+    if (side === 'a') setOriginal(text)
+    else setModified(text)
+    setNames((n) => ({ ...n, [side]: name }))
+    const guess = EXT_LANGUAGE[name.split('.').pop()?.toLowerCase() ?? '']
+    if (guess) setLanguage(guess)
+  }
+
+  const swap = () => {
+    setOriginal(modified)
+    setModified(original)
+    setNames((n) => ({ a: n.b, b: n.a }))
+  }
+
+  const identical = !!(a || b) && stats.added === 0 && stats.removed === 0
+
+  return (
+    <ToolPage
+      toolId="text-diff"
+      reference={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Both sides are editable; the diff updates as you type. Changed words within a line are highlighted.</li>
+          <li>Use the arrows (or Ctrl/⌘-Alt-↓/↑ in the editor) to jump between changes; ⌘F searches.</li>
+          <li>“Download patch” produces a standard unified diff you can apply with <code>git apply</code> or <code>patch</code>.</li>
+          <li>Files are read locally and never uploaded (max 5 MB each).</li>
+        </ul>
+      }
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <ToggleGroup type="single" variant="outline" size="sm" value={mode} onValueChange={(v) => v && setMode(v as 'split' | 'unified')} aria-label="View">
+          <ToggleGroupItem value="split" className="px-3">
+            Side by side
+          </ToggleGroupItem>
+          <ToggleGroupItem value="unified" className="px-3">
+            Unified
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <Select value={language} onValueChange={(v) => setLanguage(v as EditorLanguage)}>
+          <SelectTrigger className="h-8 w-36" aria-label="Syntax highlighting">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGES.map((l) => (
+              <SelectItem key={l.value} value={l.value}>
+                {l.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Label className="flex items-center gap-2 font-normal">
+          <Switch checked={collapse} onCheckedChange={setCollapse} /> Collapse unchanged
+        </Label>
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          {identical ? (
+            <StatusPill tone="success">Identical</StatusPill>
+          ) : (
+            (stats.added > 0 || stats.removed > 0) && (
+              <span className="mr-1 flex items-center gap-2 font-mono text-xs" aria-label={`${stats.added} lines added, ${stats.removed} removed`}>
+                <span className="text-success">+{stats.added}</span>
+                <span className="text-destructive">−{stats.removed}</span>
+              </span>
+            )
           )}
+          <Button variant="ghost" size="icon-sm" onClick={() => editorRef.current?.previousChange()} aria-label="Previous change" title="Previous change">
+            <ArrowUp />
+          </Button>
+          <Button variant="ghost" size="icon-sm" onClick={() => editorRef.current?.nextChange()} aria-label="Next change" title="Next change">
+            <ArrowDown />
+          </Button>
+          <DownloadButton value={patch} filename={`${names.b.replace(/\.[^.]+$/, '') || 'changes'}.diff`} mime="text/x-diff" toolName="code_diff" />
         </div>
+      </div>
 
-        {/* Diff Result */}
-        {diffResult.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
-            {mode === 'side-by-side' ? renderSideBySide() : renderInline()}
+      <div className="space-y-2">
+        <div className={mode === 'split' ? 'grid gap-2 sm:grid-cols-2 sm:gap-3' : 'flex flex-wrap justify-between gap-2'}>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2">
+            <span className="truncate text-xs font-medium tracking-wide text-muted-foreground uppercase">Original · {names.a}</span>
+            <div className="flex">
+              <FileButton label="Open" onLoad={load('a')} />
+              {mode === 'split' && (
+                <Button variant="ghost" size="xs" onClick={() => setOriginal('')} disabled={!original}>
+                  <Eraser /> Clear
+                </Button>
+              )}
+            </div>
           </div>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2">
+            <span className="truncate text-xs font-medium tracking-wide text-muted-foreground uppercase">Modified · {names.b}</span>
+            <div className="flex flex-wrap">
+              <FileButton label="Open" onLoad={load('b')} />
+              <Button variant="ghost" size="xs" onClick={swap} disabled={!original && !modified} title="Swap sides">
+                <ArrowLeftRight /> Swap
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  setOriginal(EXAMPLE_A)
+                  setModified(EXAMPLE_B)
+                  setNames({ a: 'package.json (before)', b: 'package.json (after)' })
+                  setLanguage('json')
+                }}
+              >
+                <FlaskConical /> Example
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DiffEditor
+          ref={editorRef}
+          original={original}
+          modified={modified}
+          onOriginalChange={setOriginal}
+          onModifiedChange={setModified}
+          mode={mode}
+          language={language}
+          collapseUnchanged={collapse}
+        />
+        {mode === 'unified' && (
+          <p className="text-xs text-muted-foreground">
+            Unified view edits the modified text; deleted lines are shown inline. Switch to side by side to edit the original.
+          </p>
         )}
       </div>
-    </>
+    </ToolPage>
   )
 }

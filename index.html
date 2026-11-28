@@ -10,67 +10,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- PWA -->
-    <meta name="theme-color" content="#1a1b26" />
+    <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0f15" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="DevUtil" />
+    <meta name="apple-mobile-web-app-title" content="LocalPlus" />
     <link rel="mask-icon" href="/logo.svg" color="#1a1b26" />
 
-    <!-- Primary Meta Tags -->
-    <meta
-      name="description"
-      content="Developer Utilities Tool - A comprehensive collection of free online developer utilities for everyday tasks. Encode/decode, generate UUIDs, format code, and more."
-    />
-    <meta
-      name="keywords"
-      content="developer tools, online utilities, dev tools, programming tools, free tools, web development"
-    />
     <meta name="author" content="Devendra Pratap Singh" />
-    <title>
-      Developer Utilities Tool - Free Developer Utilities & Tools Online
-    </title>
+    <!-- Per-route title, description, canonical, social tags and JSON-LD are
+         injected at build time from src/tools/catalog.ts (see vite-plugins/static-routes.ts). -->
+    <!--seo:start--><!--seo:end-->
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://devutil.codes/" />
-    <meta
-      property="og:title"
-      content="Developer Utilities Tool - Free Developer Utilities & Tools Online"
-    />
-    <meta
-      property="og:description"
-      content="A comprehensive collection of free online developer utilities for everyday tasks"
-    />
-    <meta property="og:image" content="/og-image.png" />
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://devutil.codes/" />
-    <meta
-      property="twitter:title"
-      content="Developer Utilities Tool - Free Developer Utilities & Tools Online"
-    />
-    <meta
-      property="twitter:description"
-      content="A comprehensive collection of free online developer utilities for everyday tasks"
-    />
-    <meta property="twitter:image" content="/og-image.png" />
-
-    <!-- Additional SEO -->
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow" />
-    <link rel="canonical" href="https://devutil.codes/" />
-
+    <script>
+      // Moved from devutil.codes: forward old bookmarks and share links (keeps path, query and #fragment).
+      // A server-side 301 on the old domain is preferred; this is the fallback.
+      (function () {
+        var h = location.hostname;
+        if (h === 'devutil.codes' || h === 'www.devutil.codes') {
+          location.replace('https://localplus.app' + location.pathname + location.search + location.hash);
+        }
+      })();
+    </script>
+    <script>
+      // Apply the saved theme before first paint (mirrors ThemeProvider).
+      (function () {
+        try {
+          var t = localStorage.getItem('devutil-theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.add(dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <style>
-      /* Prevent layout shift while CSS loads */
-      #root {
-        min-height: 100vh;
-      }
-      body {
-        margin: 0;
-        background-color: #f9fafb;
-      }
+      #root { min-height: 100vh; }
+      body { margin: 0; background-color: #fbfbfd; }
+      html.dark body { background-color: #0e0f15; }
     </style>
   </head>
 
@@ -85,18 +61,5 @@
       data-host-url="https://analytics.0xlabs.space"
     ></script>
 
-    <!-- Buy Me a Coffee Widget -->
-    <script
-      data-name="BMC-Widget"
-      data-cfasync="false"
-      src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-      data-id="0xdps"
-      data-description="Support me on Buy me a coffee!"
-      data-message=""
-      data-color="#40DCA5"
-      data-position="Right"
-      data-x_margin="18"
-      data-y_margin="18"
-    ></script>
   </body>
 </html>
